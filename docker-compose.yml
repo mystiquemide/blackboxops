@@ -1,0 +1,11 @@
+services:
+  blackboxops-ui:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      USE_MOCK_SPLUNK: "true"
+      BLACKBOXOPS_EVENT_STORE: data/blackbox_events.jsonl
+      BLACKBOXOPS_POLICY_FILE: policies/default.yaml
+    volumes:
+      - ./data:/app/data
