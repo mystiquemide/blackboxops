@@ -1,0 +1,47 @@
+rules:
+  - id: broad-index-search
+    type: query
+    status: block
+    risk_level: high
+    reason: Broad all-index searches can expose unrelated sensitive operational data and create high Splunk load.
+    patterns:
+      - "index=*"
+      - "search *"
+  - id: risky-spl-command
+    type: query
+    status: block
+    risk_level: critical
+    reason: Query contains destructive or high-risk Splunk command patterns.
+    patterns:
+      - "| delete"
+      - "| outputlookup"
+      - "| collect"
+  - id: prompt-injection-content
+    type: content
+    status: block
+    risk_level: critical
+    reason: Retrieved log content appears to contain instructions intended to hijack the AI agent.
+    patterns:
+      - "ignore previous instructions"
+      - "disregard your policy"
+      - "delete all indexes"
+      - "exfiltrate"
+  - id: destructive-action-approval
+    type: action
+    status: approval_required
+    risk_level: high
+    reason: Operationally disruptive actions require human approval and evidence binding.
+    action_types:
+      - restart_service
+      - scale_down
+      - rollback_deploy
+      - disable_alert
+  - id: low-risk-diagnostic-action
+    type: action
+    status: allow
+    risk_level: low
+    reason: Read-only diagnostic action is allowed.
+    action_types:
+      - fetch_logs
+      - create_ticket
+      - notify_oncall
