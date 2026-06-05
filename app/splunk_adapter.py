@@ -34,6 +34,7 @@ class SplunkAdapter:
             confidence = 0.95 if row.get("severity") in {"error", "warn"} else 0.75
             evidence.append(
                 EvidenceRef(
+                    evidence_id=f"EVD-{100 + len(evidence)}",
                     query=query,
                     time_range=time_range,
                     source="mock_splunk",
@@ -45,22 +46,119 @@ class SplunkAdapter:
         return evidence
 
     def real_search_stub(self, query: str, time_range: str = "-15m to now") -> list[EvidenceRef]:
+        import time as _time
+        import warnings
+
+        import requests
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore[attr-defined]
+
+        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+
+        host = os.getenv("SPLUNK_HOST", "localhost")
+        port = int(os.getenv("SPLUNK_PORT", "8089"))
+        token = os.getenv("SPLUNK_TOKEN", "")
+        base = f"https://{host}:{port}"
+        headers = {"Authorization": f"Bearer {token}"}
+
+        try:
+            create = requests.post(
+                f"{base}/services/search/jobs",
+                headers=headers,
+                data={
+                    "search": f"search {query}",
+                    "output_mode": "json",
+                    "earliest_time": "-15m",
+                    "latest_time": "now",
+                    "count": 10,
+                },
+                verify=False,
+                timeout=30,
+            )
+            create.raise_for_status()
+            sid = create.json()["sid"]
+
+            for _ in range(30):
+                poll = requests.get(
+                    f"{base}/services/search/jobs/{sid}",
+                    headers=headers,
+                    params={"output_mode": "json"},
+                    verify=False,
+                    timeout=10,
+                )
+                if poll.json()["entry"][0]["content"]["isDone"]:
+                    break
+                _time.sleep(1)
+
+            results_resp = requests.get(
+                f"{base}/services/search/jobs/{sid}/results",
+                headers=headers,
+                params={"output_mode": "json", "count": 10},
+                verify=False,
+                timeout=10,
+            )
+            rows = results_resp.json().get("results", [])
+
+            if rows:
+                return [
+                    EvidenceRef(
+                        query=query,
+                        time_range=time_range,
+                        source="splunk_search_api",
+                        sample_event={k: str(v) for k, v in row.items() if not k.startswith("_")},
+                        confidence=0.9,
+                        risk_flags=["splunk-live"],
+                    )
+                    for row in rows[:3]
+                ]
+        except Exception as exc:
+            return [
+                EvidenceRef(
+                    query=query,
+                    time_range=time_range,
+                    source="splunk_search_api",
+                    sample_event={"error": str(exc), "note": "Splunk REST API call failed."},
+                    confidence=0.2,
+                    risk_flags=["splunk-error"],
+                )
+            ]
+
         return [
             EvidenceRef(
                 query=query,
                 time_range=time_range,
                 source="splunk_search_api",
-                sample_event={"note": "Real Splunk search hook configured but not executed in mock demo."},
+                sample_event={"note": "Splunk search returned 0 results."},
                 confidence=0.5,
-                risk_flags=["integration-stub"],
+                risk_flags=[],
             )
         ]
 
     def send_hec_event(self, event: dict[str, Any]) -> bool:
         if self.use_mock:
             return True
-        # Hook point for Splunk HEC POST using SPLUNK_HEC_TOKEN.
-        return False
+        import warnings
+
+        import requests
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore[attr-defined]
+
+        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+
+        host = os.getenv("SPLUNK_HOST", "localhost")
+        hec_port = int(os.getenv("SPLUNK_HEC_PORT", "8088"))
+        token = os.getenv("SPLUNK_HEC_TOKEN", "")
+        if not token:
+            return False
+        try:
+            resp = requests.post(
+                f"https://{host}:{hec_port}/services/collector",
+                headers={"Authorization": f"Splunk {token}"},
+                json={"event": event, "sourcetype": "blackboxops:agent_event"},
+                verify=False,
+                timeout=5,
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
 
     def _load_sample_events(self) -> list[dict[str, Any]]:
         if not self.sample_path.exists():
