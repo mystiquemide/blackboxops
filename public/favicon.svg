@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="case" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18202B"/>
+      <stop offset="0.58" stop-color="#070A0F"/>
+      <stop offset="1" stop-color="#010204"/>
+    </linearGradient>
+    <linearGradient id="strip" x1="44" y1="10" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8A3D"/>
+      <stop offset="1" stop-color="#FF6B2C"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#05070B"/>
+  <rect x="9" y="13" width="46" height="38" rx="8" fill="url(#case)" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+  <path d="M44 14h3.5C51.6 14 55 17.4 55 21.5v21C55 46.6 51.6 50 47.5 50H44V14Z" fill="url(#strip)"/>
+  <path d="M17 25h18M17 32h14M17 39h20" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+  <circle cx="49" cy="22" r="3" fill="#65A637" filter="url(#glow)"/>
+  <circle cx="49" cy="32" r="2" fill="#38BDF8" opacity=".95"/>
+  <circle cx="49" cy="42" r="2" fill="#FF6B2C" opacity=".95"/>
+  <path d="M12 17L20 13H44L52 17" stroke="rgba(255,255,255,.22)" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

@@ -3,10 +3,27 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import uuid4
 
-from app.models import AgentEvent, IncidentReplay, PolicyDecision
+from app.models import AgentEvent, IncidentReplay, PolicyDecision, utc_now
 from app.policy_engine import PolicyEngine
 from app.recorder import EventRecorder
 from app.splunk_adapter import SplunkAdapter
+
+def _demo_policy_id(policy_id: str) -> str:
+    mapping = {
+        "prompt-injection-content": "POL-INJ-01",
+        "broad-index-search": "POL-SPL-01",
+        "risky-spl-command": "POL-SPL-02",
+        "destructive-action-approval": "POL-APPR-01",
+        "low-risk-diagnostic-action": "POL-DIAG-01",
+    }
+    return mapping.get(policy_id, policy_id)
+
+
+def _retag_decision(decision: PolicyDecision) -> PolicyDecision:
+    decision.policy_id = _demo_policy_id(decision.policy_id)
+    decision.matched_rules = [_demo_policy_id(rule) for rule in decision.matched_rules]
+    return decision
+
 
 INCIDENT_ID = "inc_prompt_injection_checkout"
 INCIDENT_TITLE = "Checkout latency spike with prompt-injection log payload"
@@ -22,6 +39,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
     decisions: list[PolicyDecision] = []
 
     def add(event: AgentEvent) -> None:
+        event.display_id = f"EVT-{len(events) + 1:03d}"
         recorder.append(event)
         events.append(event)
 
@@ -35,7 +53,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
     ))
 
     safe_query = 'index=main sourcetype=app_logs service=checkout (error OR warn) | stats count by severity, host'
-    query_decision = policy.evaluate_query(safe_query, "-15m to now")
+    query_decision = _retag_decision(policy.evaluate_query(safe_query, "-15m to now"))
     decisions.append(query_decision)
     add(AgentEvent(
         incident_id=INCIDENT_ID,
@@ -73,6 +91,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
         ))
         content_decision = policy.evaluate_content(item.sample_event.get("message", ""))
         if content_decision.status != "allow":
+            content_decision = _retag_decision(content_decision)
             decisions.append(content_decision)
             add(AgentEvent(
                 incident_id=INCIDENT_ID,
@@ -87,7 +106,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
             ))
 
     unsafe_query = "index=* | delete"
-    blocked_query = policy.evaluate_query(unsafe_query, "-24h@h to now")
+    blocked_query = _retag_decision(policy.evaluate_query(unsafe_query, "-24h@h to now"))
     decisions.append(blocked_query)
     add(AgentEvent(
         incident_id=INCIDENT_ID,
@@ -101,7 +120,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
     ))
 
     evidence_ids = [item.evidence_id for item in evidence]
-    action_decision = policy.evaluate_action("restart_service", "checkout-api", evidence_ids)
+    action_decision = _retag_decision(policy.evaluate_action("restart_service", "checkout-api", evidence_ids))
     decisions.append(action_decision)
     add(AgentEvent(
         incident_id=INCIDENT_ID,
@@ -130,6 +149,11 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
         incident_id=INCIDENT_ID,
         title=INCIDENT_TITLE,
         status="recorded",
+        session_id=session_id,
+        source="mock_splunk" if use_mock else "splunk_search_api",
+        started_at=utc_now().isoformat().replace("+00:00", "Z"),
+        outcome="blocked" if any(decision.status == "block" for decision in decisions) else "recorded",
+        approval_required=any(decision.required_approval for decision in decisions),
         events=events,
         evidence=evidence,
         policy_decisions=decisions,

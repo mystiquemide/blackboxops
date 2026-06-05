@@ -58,6 +58,7 @@ class PolicyDecision(BaseModel):
 
 class AgentEvent(BaseModel):
     event_id: str = Field(default_factory=lambda: _id("evt"))
+    display_id: str | None = None
     incident_id: str
     session_id: str
     timestamp: datetime = Field(default_factory=utc_now)
@@ -76,15 +77,75 @@ class IncidentSummary(BaseModel):
     severity: str = "medium"
     status: str = "open"
     description: str = ""
+    updated_at: str = "2026-05-29T10:05:00Z"
+    actor: str = "bb-agent/checkout-v2"
+    source: EvidenceSource = "mock_splunk"
+    evidence_refs: int = 0
+    policy_id: str = "POL-INJ-01"
+    policy_outcome: str = "BLOCKED"
 
+class PolicySummary(BaseModel):
+    policy_id: str
+    name: str
+    description: str
+    status: PolicyStatus
+    enabled: bool = True
+    risk_level: RiskLevel = "low"
+    splunk_source: EvidenceSource = "mock_splunk"
+    original_rule_id: str | None = None
 
 class IncidentReplay(BaseModel):
     incident_id: str
     title: str
     status: str = "recorded"
+    session_id: str | None = None
+    source: EvidenceSource = "mock_splunk"
+    started_at: str | None = None
+    outcome: str = "recorded"
+    approval_required: bool = False
     events: list[AgentEvent] = Field(default_factory=list)
     evidence: list[EvidenceRef] = Field(default_factory=list)
     policy_decisions: list[PolicyDecision] = Field(default_factory=list)
+
+
+class ActionProposalRequest(BaseModel):
+    incident_id: str
+    action_type: str
+    target: str
+    evidence_refs: list[str] = Field(default_factory=list)
+    requested_by: str = "operator@blackboxops.local"
+    reason: str = ""
+
+
+class ActionProposal(BaseModel):
+    action_id: str = Field(default_factory=lambda: _id("act"))
+    incident_id: str
+    action_type: str
+    target: str
+    evidence_refs: list[str] = Field(default_factory=list)
+    requested_by: str
+    reason: str = ""
+    status: Literal["pending_approval", "blocked", "allowed", "warned", "approved", "rejected"]
+    decision: PolicyDecision
+    created_at: str = Field(default_factory=lambda: utc_now().isoformat().replace("+00:00", "Z"))
+    approved_by: str | None = None
+    rejected_by: str | None = None
+    review_note: str | None = None
+    reviewed_at: str | None = None
+
+
+class ActionReviewRequest(BaseModel):
+    reviewer: str
+    note: str = ""
+
+
+class ActionReviewResponse(BaseModel):
+    action_id: str
+    incident_id: str
+    status: Literal["approved", "rejected"]
+    reviewer: str
+    note: str = ""
+    reviewed_at: str
 
 
 class Postmortem(BaseModel):

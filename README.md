@@ -31,17 +31,33 @@ cd C:/Users/Prince/Projects/hackathons/blackboxops
 python -m venv .venv
 source .venv/Scripts/activate
 pip install -r requirements.txt
+npm install
 python -m pytest tests/ -q
 python scripts/run_demo.py
 ```
 
-Run API:
+Run the React demo locally:
 
 ```bash
-uvicorn app.main:app --reload
+# Terminal 1 — API
+USE_MOCK_SPLUNK=true USE_MOCK_AUTH=true uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — React app
+npm run dev
 ```
 
-Run UI:
+Open the Vite URL, click `Enter judge demo`, then open the replay dashboard.
+
+Build and serve the production React UI from FastAPI:
+
+```bash
+npm run build
+USE_MOCK_SPLUNK=true USE_MOCK_AUTH=true uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Then open `http://127.0.0.1:8000`.
+
+Streamlit fallback UI:
 
 ```bash
 streamlit run app/ui.py
@@ -91,6 +107,8 @@ See:
 python -m pytest tests/ -q
 python -m compileall app scripts tests -q
 python scripts/run_demo_checks.py
+npm run lint
+npm run build
 ```
 
 Current coverage focus:
@@ -104,11 +122,11 @@ Current coverage focus:
 
 See `docs/DEPLOYMENT.md`.
 
-Docker:
+React-first Docker deployment:
 
 ```bash
 docker build -t blackboxops .
-docker run --rm -p 8501:8501 blackboxops
+docker run --rm -p 8000:8000 blackboxops
 ```
 
 Docker Compose:
@@ -117,7 +135,22 @@ Docker Compose:
 docker compose up --build
 ```
 
-Railway/Render-style Procfile is included for Streamlit hosting.
+The Streamlit UI remains available as a local fallback with `streamlit run app/ui.py`.
+
+## React demo UI
+
+For development, run FastAPI and the Vite frontend in separate terminals:
+
+```bash
+USE_MOCK_SPLUNK=true USE_MOCK_AUTH=*** uvicorn app.main:app --reload --port 8000
+npm install
+npm run dev
+```
+
+Vite proxies `/api` requests to `http://127.0.0.1:8000` by default. Set
+`BLACKBOXOPS_API_URL` before `npm run dev` when the API uses another port.
+
+For deployment, run `npm run build`; FastAPI serves the generated `dist/` app at `/` while keeping `/api/*` routes available.
 
 ## Project structure
 
@@ -131,6 +164,7 @@ app/
   recorder.py          JSONL event recorder
   demo_agent.py        Deterministic demo scenario
   postmortem.py        Evidence-backed postmortem generator
+src/                   React + TypeScript demo UI
 policies/default.yaml  Policy rules
 data/*.jsonl           Demo incidents and mock Splunk events
 tests/                 Pytest suite

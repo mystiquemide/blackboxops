@@ -16,9 +16,15 @@ venv/
 
 # Generated runtime output
 data/blackbox_events.jsonl
+dist/
+node_modules/
+.vite-user.*.log
+.api-user.*.log
 
 # OS/editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+data/auth_users.jsonl
+.hermes/

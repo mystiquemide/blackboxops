@@ -1,11 +1,13 @@
 services:
-  blackboxops-ui:
+  blackboxops:
     build: .
     ports:
-      - "8501:8501"
+      - "8000:8000"
     environment:
       USE_MOCK_SPLUNK: "true"
+      USE_MOCK_AUTH: "true"
       BLACKBOXOPS_EVENT_STORE: data/blackbox_events.jsonl
       BLACKBOXOPS_POLICY_FILE: policies/default.yaml
+      BLACKBOXOPS_AUTH_STORE: data/auth_users.jsonl
     volumes:
       - ./data:/app/data
