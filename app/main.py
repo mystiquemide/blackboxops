@@ -73,6 +73,18 @@ def auth_me(user: AuthUser = Depends(current_user_from_authorization)) -> AuthUs
     return user
 
 
+@app.post("/api/auth/demo", response_model=AuthSession)
+def auth_demo() -> AuthSession:
+    from app.auth import upsert_oauth_user
+    return upsert_oauth_user(
+        email="judge@blackboxops.demo",
+        name="Judge Demo",
+        provider="demo",
+        provider_user_id="demo-judge",
+        picture=None,
+    )
+
+
 @app.get("/api/auth/google/login")
 def auth_google_login() -> RedirectResponse:
     if use_mock_auth():

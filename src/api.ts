@@ -3,9 +3,14 @@ import type { ActionProposal, ActionProposalRequest, ActionReviewRequest, Action
 export const AUTH_TOKEN_KEY = 'blackboxops.auth.token';
 export const AUTH_USER_KEY = 'blackboxops.auth.user';
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(init?.headers ?? {}) },
     ...init,
   });
   if (!response.ok) {
@@ -33,6 +38,7 @@ export const api = {
   getPostmortem: (incidentId: string) => request<Postmortem>(`/incidents/${incidentId}/postmortem`),
   signUp: (payload: { name: string; email: string; password: string }) => request<AuthSession>('/auth/signup', { method: 'POST', body: JSON.stringify(payload) }),
   signIn: (payload: { email: string; password: string }) => request<AuthSession>('/auth/signin', { method: 'POST', body: JSON.stringify(payload) }),
+  demoSession: () => request<AuthSession>('/auth/demo', { method: 'POST' }),
   me: (token: string) => request<AuthUser>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
   patchPolicy: (policyId: string, enabled: boolean) => request<PolicySummary>(`/policies/${policyId}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
   googleLoginUrl: () => '/api/auth/google/login',

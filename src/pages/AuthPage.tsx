@@ -81,15 +81,16 @@ export default function AuthPage() {
     window.location.href = api.googleLoginUrl();
   }
 
-  function continueWithDemo() {
-    const session = {
-      token: 'demo-preview-token',
-      user: { email: 'judge@blackboxops.demo', name: 'Judge Demo', provider: 'demo' },
-    };
-    localStorage.setItem(AUTH_TOKEN_KEY, session.token);
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
-    const next = searchParams.get('next');
-    navigate(next && next.startsWith('/') ? next : '/incidents', { replace: true });
+  async function continueWithDemo() {
+    try {
+      const session = await api.demoSession();
+      localStorage.setItem(AUTH_TOKEN_KEY, session.token);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
+      const next = searchParams.get('next');
+      navigate(next && next.startsWith('/') ? next : '/incidents', { replace: true });
+    } catch {
+      setError('Demo session unavailable. Use email and password instead.');
+    }
   }
 
   return (
