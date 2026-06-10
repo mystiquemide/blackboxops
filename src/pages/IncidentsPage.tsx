@@ -147,10 +147,10 @@ export default function IncidentsPage() {
               {visibleIncidents.map((incident) => (
                 <article className={`bbo-inc-row ${incident.id === selectedId ? 'selected' : ''}`} key={incident.id} onClick={() => setSelectedId(incident.id)}>
                   <div className="bbo-inc-top"><span className="bbo-inc-id">{incident.id}</span><span className="bbo-source">{incident.source}</span><span className="bbo-inc-title">{incident.trigger}</span><div className="bbo-inc-pills"><span className={`bbo-risk ${incident.risk}`}>{incident.risk}</span><span className={`bbo-pill ${incident.status}`}>{incident.status === 'approval' ? 'approval req' : incident.status}</span></div></div>
-                  <div className="bbo-inc-bottom"><span className="bbo-inc-desc">{incident.description}</span><div className="bbo-inc-meta"><span className="bbo-muted">{incident.time}</span><span className="bbo-ev-id">{incident.actor}</span><span className="bbo-ref">{incident.evidenceRefs} ev</span><button className="bbo-outline-btn" onClick={(event) => { event.stopPropagation(); navigate(`/dashboard?incident=${incident.id}&autoplay=1`); }}>▶ Replay</button></div></div>
+                  <div className="bbo-inc-bottom"><span className="bbo-inc-desc">{incident.description}</span><div className="bbo-inc-meta"><span className="bbo-muted">{incident.time}</span><span className="bbo-ev-id">{incident.actor}</span><span className="bbo-ref">{incident.evidenceRefs} ev</span><button className="bbo-outline-btn" onClick={(event) => { event.stopPropagation(); navigate(`/dashboard?incident=${incident.id}&autoplay=1`); }}><Play size={9} fill="currentColor" />Replay</button></div></div>
                 </article>
               ))}
-              {!visibleIncidents.length && <div className="bbo-empty"><div className="bbo-empty-icon">⌕</div><div>No incidents match this filter.</div><button className="bbo-outline-btn" onClick={() => { setActiveFilter('all'); setQuery(''); }}>Reset filters</button></div>}
+              {!visibleIncidents.length && <div className="bbo-empty"><div className="bbo-empty-icon"><Search size={26} /></div><div>No incidents match this filter.</div><button className="bbo-outline-btn" onClick={() => { setActiveFilter('all'); setQuery(''); }}>Reset filters</button></div>}
             </div>
           </main>
         </section>

@@ -1,7 +1,8 @@
 {
   "name": "blackboxops",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Splunk-native flight recorder and safety layer for agentic operations",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Download, Play, ShieldAlert, XCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Download, Flag, Play, Radar, ShieldAlert, XCircle } from 'lucide-react';
 
 import BboConsoleNav from '../components/BboConsoleNav';
 import { AUTH_USER_KEY, api } from '../api';
@@ -64,7 +64,7 @@ function Metric({ label, value, sub, tone, small = false }: { label: string; val
 }
 
 function Empty({ text }: { text: string }) {
-  return <div className="bbo-empty"><div className="bbo-empty-icon">◈</div><div>{text}</div></div>;
+  return <div className="bbo-empty"><div className="bbo-empty-icon"><Radar size={26} /></div><div>{text}</div></div>;
 }
 
 function EventCard({ event, index }: { event: AgentEvent; index: number }) {
@@ -108,7 +108,7 @@ function PolicyMiniCard({ decision }: { decision: PolicyDecision }) {
       <div className="bbo-card-top"><span className="bbo-ev-id">{decision.policy_id}</span><span className={`bbo-pill ${policyClass(decision.status)}`}>{decision.status}</span></div>
       <div className="bbo-pc-desc">{decision.reason}</div>
       <div className="bbo-event-foot">{decision.matched_rules.map((rule) => <span className="bbo-tag-pill" key={rule}>{rule}</span>)}</div>
-      {decision.required_approval && <div className="bbo-code-block" style={{ color: 'var(--bbo-amber)' }}>⚑ Awaiting approval from: sre-lead@acme.corp</div>}
+      {decision.required_approval && <div className="bbo-code-block" style={{ color: 'var(--bbo-amber)' }}><Flag size={10} style={{ marginRight: 6, verticalAlign: -1 }} />Awaiting approval from: sre-lead@acme.corp</div>}
     </article>
   );
 }
@@ -292,8 +292,8 @@ export default function DashboardPage() {
             {['Policy gateway active', 'Approval gate enabled', dataMode === 'live' ? 'Live API data' : 'Splunk connector required'].map((item, index) => <div className="bbo-chip" key={item}><span className={`bbo-dot ${['amber', 'green', dataMode === 'live' ? 'green' : 'red'][index]}`} />{item}</div>)}
             <ActionApprovalCard busy={actionBusy} error={actionError} proposal={actionProposal} onApprove={() => void reviewRemediation('approve')} onPropose={() => void proposeRemediation()} onReject={() => void reviewRemediation('reject')} />
             <div className="bbo-label" style={{ marginTop: 8 }}>Record flow</div>
-            <button className="bbo-chip bbo-nav-chip" onClick={() => navigate('/incidents')} type="button"><span className="bbo-dot orange" />Incidents → Replay</button>
-            <button className="bbo-chip bbo-nav-chip" onClick={() => navigate('/policies')} type="button"><span className="bbo-dot orange" />Policies → Gateway</button>
+            <button className="bbo-chip bbo-nav-chip" onClick={() => navigate('/incidents')} type="button"><span className="bbo-dot orange" />Incidents<ArrowRight size={10} />Replay</button>
+            <button className="bbo-chip bbo-nav-chip" onClick={() => navigate('/policies')} type="button"><span className="bbo-dot orange" />Policies<ArrowRight size={10} />Gateway</button>
           </aside>
           <main className="bbo-timeline">
             <div className="bbo-panel-head">Agent action chain · Replay timeline</div>

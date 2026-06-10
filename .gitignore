@@ -15,11 +15,15 @@ venv/
 !.env.example
 
 # Generated runtime output
+scripts/shots/
 data/blackbox_events.jsonl
 dist/
 node_modules/
 .vite-user.*.log
 .api-user.*.log
+
+# Agent memory and local notes
+memory.md
 
 # OS/editor
 .DS_Store
