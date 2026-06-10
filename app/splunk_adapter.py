@@ -7,7 +7,7 @@ from typing import Any
 
 from app.models import EvidenceRef
 
-_MCP_SEARCH_TOOL_PRIORITY = ("run_splunk_search", "run_search", "search", "run_spl_search", "splunk_search")
+_MCP_SEARCH_TOOL_PRIORITY = ("splunk_run_query", "run_splunk_search", "run_search", "search", "run_spl_search", "splunk_search")
 
 
 def _pick_search_tool(tools: list[Any]) -> Any | None:

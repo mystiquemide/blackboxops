@@ -29,12 +29,13 @@ INCIDENT_ID = "inc_prompt_injection_checkout"
 INCIDENT_TITLE = "Checkout latency spike with prompt-injection log payload"
 
 
-def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl", use_mock: bool = True) -> IncidentReplay:
+def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl", use_mock: bool | None = None) -> IncidentReplay:
     session_id = f"sess_{uuid4().hex[:8]}"
     recorder = EventRecorder(event_store_path)
     recorder.clear()
     policy = PolicyEngine.from_file("policies/default.yaml")
     splunk = SplunkAdapter(use_mock=use_mock)
+    evidence_source = "mock_splunk" if splunk.use_mock else ("splunk_mcp" if splunk.use_mcp else "splunk_search_api")
     events: list[AgentEvent] = []
     decisions: list[PolicyDecision] = []
 
@@ -73,7 +74,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
         event_type="spl_query",
         actor="demo_agent",
         risk_score=0.2,
-        summary="Agent queried mock Splunk for checkout errors and warnings.",
+        summary=f"Agent queried {evidence_source} for checkout errors and warnings.",
         payload={"query": safe_query, "result_count": len(evidence)},
         evidence_refs=evidence,
     ))
@@ -83,7 +84,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
             incident_id=INCIDENT_ID,
             session_id=session_id,
             event_type="evidence",
-            actor="mock_splunk",
+            actor=evidence_source,
             risk_score=0.6 if "prompt-injection" in item.risk_flags else 0.35,
             summary="Splunk evidence captured for incident replay.",
             payload={"sample_event": item.sample_event},
@@ -150,7 +151,7 @@ def run_demo_incident(event_store_path: str | Path = "data/blackbox_events.jsonl
         title=INCIDENT_TITLE,
         status="recorded",
         session_id=session_id,
-        source="mock_splunk" if use_mock else "splunk_search_api",
+        source=evidence_source,
         started_at=utc_now().isoformat().replace("+00:00", "Z"),
         outcome="blocked" if any(decision.status == "block" for decision in decisions) else "recorded",
         approval_required=any(decision.required_approval for decision in decisions),
