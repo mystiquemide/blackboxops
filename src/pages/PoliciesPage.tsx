@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Pause, Shield, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ArrowUpRight, Pause, Play, Shield, ShieldAlert, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import BboConsoleNav from '../components/BboConsoleNav';
@@ -108,10 +108,10 @@ export default function PoliciesPage() {
                     <div className="bbo-policy-right"><span className={`bbo-pill ${outcomeClass(policy.status)}`}>{shortOutcome(policy.status)}</span><button className="bbo-toggle" onClick={(event) => { event.stopPropagation(); togglePolicy(policy.policy_id); }}><span className={`bbo-track ${policy.enabled ? 'on' : 'off'}`}><span className="bbo-thumb" /></span><span className={`bbo-toggle-label ${policy.enabled ? 'on' : 'off'}`}>{policy.enabled ? 'ON' : 'OFF'}</span></button></div>
                   </div>
                   <div className="bbo-policy-desc">{policy.description}</div>
-                  <div className="bbo-policy-footer">{policy.tags.map((tag) => <span className="bbo-tag-pill" key={tag}>{tag}</span>)}{policy.featured && <span className="bbo-pill block">★ Powers main replay demo</span>}{policy.linkedIncident && <span className="bbo-ref">→ {policy.linkedIncident}</span>}</div>
+                  <div className="bbo-policy-footer">{policy.tags.map((tag) => <span className="bbo-tag-pill" key={tag}>{tag}</span>)}{policy.featured && <span className="bbo-pill block"><Star size={9} fill="currentColor" />Powers main replay demo</span>}{policy.linkedIncident && <span className="bbo-ref"><ArrowRight size={9} />{policy.linkedIncident}</span>}</div>
                 </article>
               ))}
-              {!visible.length && <div className="bbo-empty"><div className="bbo-empty-icon">◇</div><div>No policies match this filter.</div><button className="bbo-outline-btn" onClick={() => setActiveFilter('all')}>Show all policies</button></div>}
+              {!visible.length && <div className="bbo-empty"><div className="bbo-empty-icon"><Shield size={26} /></div><div>No policies match this filter.</div><button className="bbo-outline-btn" onClick={() => setActiveFilter('all')}>Show all policies</button></div>}
             </div>
           </main>
           <aside className="bbo-right-rail">
@@ -127,7 +127,7 @@ export default function PoliciesPage() {
             <div className="bbo-rail-section"><div className="bbo-label">Posture config</div><div className="bbo-gstat"><span className="bbo-kv-key">Mode</span><span className="bbo-kv-val" style={{ color: 'var(--bbo-red)' }}>FAIL-CLOSED</span></div><div className="bbo-gstat"><span className="bbo-kv-key">Source</span><span className="bbo-kv-val">mock_splunk</span></div><div className="bbo-gstat"><span className="bbo-kv-key">MCP-ready</span><span className="bbo-kv-val" style={{ color: 'var(--bbo-green)' }}>YES</span></div></div>
           </aside>
         </section>
-        <section className="bbo-demo-callout"><div className="bbo-demo-title"><Shield size={10} /> Demo replay path — powered by POL-INJ-01</div><div className="bbo-demo-body">Policy <span className="bbo-demo-id">POL-INJ-01</span> drives the main incident replay. When a prompt-injection payload appears in Splunk log evidence <span className="bbo-demo-id">EVD-101</span>, this rule fires, blocks the agent action, and records the decision as incident <span className="bbo-demo-id">INC-20260529</span>. Open the incident directory or replay dashboard to see the full evidence chain.</div><div className="bbo-callout-actions"><button className="bbo-outline-btn red" onClick={() => navigate('/dashboard?incident=INC-20260529&autoplay=1')}>▶ Open replay dashboard ↗</button><button className="bbo-outline-btn" onClick={() => navigate('/incidents')}>Open incidents directory</button></div></section>
+        <section className="bbo-demo-callout"><div className="bbo-demo-title"><Shield size={10} /> Demo replay path — powered by POL-INJ-01</div><div className="bbo-demo-body">Policy <span className="bbo-demo-id">POL-INJ-01</span> drives the main incident replay. When a prompt-injection payload appears in Splunk log evidence <span className="bbo-demo-id">EVD-101</span>, this rule fires, blocks the agent action, and records the decision as incident <span className="bbo-demo-id">INC-20260529</span>. Open the incident directory or replay dashboard to see the full evidence chain.</div><div className="bbo-callout-actions"><button className="bbo-outline-btn red" onClick={() => navigate('/dashboard?incident=INC-20260529&autoplay=1')}><Play size={9} fill="currentColor" />Open replay dashboard<ArrowUpRight size={10} /></button><button className="bbo-outline-btn" onClick={() => navigate('/incidents')}>Open incidents directory</button></div></section>
       </div>
     </div>
   );

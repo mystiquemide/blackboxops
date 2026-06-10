@@ -4,6 +4,7 @@ import './index.css'
 import './styles/replay-dashboard.css'
 import './styles/incidents.css'
 import './styles/bbo-console.css'
+import './styles/landing.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
