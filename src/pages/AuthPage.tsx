@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Fingerprint, LockKeyhole, Play, Radar, ShieldCheck, ShieldX, TriangleAlert, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Fingerprint, LockKeyhole, Play, Radar, ShieldCheck } from 'lucide-react';
 
 import { api, AUTH_TOKEN_KEY, AUTH_USER_KEY } from '../api';
 
