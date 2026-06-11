@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Fingerprint, LockKeyhole, Radar, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, Fingerprint, LockKeyhole, Play, Radar, ShieldCheck, ShieldX, TriangleAlert, CheckCircle } from 'lucide-react';
 
 import { api, AUTH_TOKEN_KEY, AUTH_USER_KEY } from '../api';
 
@@ -45,10 +45,13 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [sandboxLoading, setSandboxLoading] = useState(false);
   const [error, setError] = useState(searchParams.get('error') ? 'Authentication failed. Try again or use email and password.' : '');
 
   const headline = useMemo(
-    () => mode === 'signin' ? 'Log in with your existing BlackBoxOps operator credentials.' : 'Create a new BlackBoxOps operator account for your workspace.',
+    () => mode === 'signin'
+      ? 'Log in with your BlackBoxOps operator credentials.'
+      : 'Create a BlackBoxOps operator account.',
     [mode],
   );
 
@@ -81,7 +84,9 @@ export default function AuthPage() {
     window.location.href = api.googleLoginUrl();
   }
 
-  async function continueWithDemo() {
+  async function exploreSandbox() {
+    setSandboxLoading(true);
+    setError('');
     try {
       const session = await api.demoSession();
       localStorage.setItem(AUTH_TOKEN_KEY, session.token);
@@ -89,7 +94,8 @@ export default function AuthPage() {
       const next = searchParams.get('next');
       navigate(next && next.startsWith('/') ? next : '/incidents', { replace: true });
     } catch {
-      setError('Demo session unavailable. Use email and password instead.');
+      setError('Sandbox unavailable. Use email and password to sign in.');
+      setSandboxLoading(false);
     }
   }
 
@@ -104,25 +110,53 @@ export default function AuthPage() {
 
       <section className="auth-shell">
         <aside className="auth-story">
-          <div className="auth-kicker"><Radar size={16} /> BLACKBOXOPS IDENTITY GATE</div>
+          <div className="auth-kicker"><Radar size={16} /> BLACKBOXOPS OPERATOR ACCESS</div>
           <h1>{headline}</h1>
           <div className="auth-proof-cards">
-            <article><ShieldCheck /><b>Policy-aware access</b><span>Route operators into the safety gateway before replay.</span></article>
-            <article><Fingerprint /><b>Evidence-bound identity</b><span>Every session carries a user identity for audit context.</span></article>
-            <article><LockKeyhole /><b>Operator accounts</b><span>Log in with existing credentials, or sign up only when creating a new account.</span></article>
+            <article><ShieldCheck /><b>Policy-aware access</b><span>Every session routes through the safety gateway before replay.</span></article>
+            <article><Fingerprint /><b>Evidence-bound identity</b><span>Sessions carry operator identity for audit context and postmortems.</span></article>
+            <article><LockKeyhole /><b>Persistent workspace</b><span>Incidents, policy decisions, and evidence chains persist to your account.</span></article>
           </div>
         </aside>
 
         <div className="auth-card">
+
+          {/* Sandbox — primary path */}
+          <div className="auth-sandbox-block">
+            <div className="auth-sandbox-header">
+              <div className="auth-sandbox-eyebrow">Interactive sandbox</div>
+              <div className="auth-sandbox-title">See BlackBoxOps in action</div>
+              <p className="auth-sandbox-sub">Pre-loaded with a live incident: prompt injection detected, unsafe query blocked, approval gate triggered.</p>
+            </div>
+            <div className="auth-sandbox-proof">
+              <span><ShieldX size={11} /> Injection blocked</span>
+              <span><TriangleAlert size={11} /> Query intercepted</span>
+              <span><CheckCircle size={11} /> Postmortem ready</span>
+            </div>
+            <button
+              className="auth-sandbox-cta"
+              onClick={exploreSandbox}
+              disabled={sandboxLoading}
+              type="button"
+            >
+              <Play size={13} fill="currentColor" />
+              {sandboxLoading ? 'Loading sandbox...' : 'Explore sandbox'}
+            </button>
+            <p className="auth-sandbox-note">No account required. Sandbox data resets on each session.</p>
+          </div>
+
+          <div className="auth-divider"><span /> or sign in to your account <span /></div>
+
+          {/* Real account — secondary path */}
           <div className="auth-card-top">
             <div>
-              <span>Secure workspace</span>
-              <h2>{mode === 'signin' ? 'Log in' : 'Sign up'}</h2>
+              <span>Operator workspace</span>
+              <h2>{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
             </div>
           </div>
 
           <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
-            <button className={mode === 'signin' ? 'active' : ''} onClick={() => switchMode('signin')} type="button">Log in</button>
+            <button className={mode === 'signin' ? 'active' : ''} onClick={() => switchMode('signin')} type="button">Sign in</button>
             <button className={mode === 'signup' ? 'active' : ''} onClick={() => switchMode('signup')} type="button">Sign up</button>
           </div>
 
@@ -135,30 +169,24 @@ export default function AuthPage() {
             )}
             <label>
               Email
-              <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email@gmail.com" required type="email" />
+              <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" required type="email" />
             </label>
             <label>
               Password
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === 'signin' ? 'Your password' : 'Create a password'} required minLength={mode === 'signup' ? 8 : 1} type="password" />
+              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === 'signin' ? 'Your password' : 'Create a password (8+ chars)'} required minLength={mode === 'signup' ? 8 : 1} type="password" />
             </label>
             {error && <p className="auth-error">{error}</p>}
             <button className="auth-primary" disabled={submitting} type="submit">
-              {submitting ? 'Securing workspace...' : mode === 'signin' ? 'Log in to dashboard' : 'Create account'}
+              {submitting ? 'Securing workspace...' : mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>
-            <button className="auth-demo-button" onClick={continueWithDemo} type="button">
-              <Sparkles size={15} /> Try free workspace
-            </button>
-            <div className="auth-divider"><span /> Optional OAuth <span /></div>
-            <button className="auth-primary auth-google" onClick={continueWithGoogle} type="button">
-              <span className="google-mark" aria-hidden="true">G</span>
-              Continue with Google
-            </button>
-            <p className="auth-helper">
-              {mode === 'signin'
-                ? 'Log in with existing credentials, or try the free workspace to explore the incident replay.'
-                : 'Create a new operator account, or use the free workspace to explore BlackBoxOps without signing up.'}
-            </p>
           </form>
+
+          <div className="auth-divider auth-divider-slim"><span /> or <span /></div>
+
+          <button className="auth-primary auth-google" onClick={continueWithGoogle} type="button">
+            <span className="google-mark" aria-hidden="true">G</span>
+            Continue with Google
+          </button>
         </div>
       </section>
     </main>
