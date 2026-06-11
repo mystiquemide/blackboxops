@@ -24,6 +24,8 @@ node_modules/
 
 # Agent memory and local notes
 memory.md
+AGENTS.md
+DESIGN.md
 
 # OS/editor
 .DS_Store

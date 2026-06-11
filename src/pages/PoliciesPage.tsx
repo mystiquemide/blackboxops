@@ -86,7 +86,7 @@ export default function PoliciesPage() {
             <div className="bbo-brand-row"><span className="bbo-led red" /><span className="bbo-tag">BlackBoxOps · Safety Gateway</span></div>
             <div className="bbo-hero-title">Rules that stop unsafe agent actions before execution.</div>
             <div className="bbo-hero-sub">BlackBoxOps evaluates every agent operation against named policies that can block, warn, allow, or require human approval. Each decision becomes part of the replayable evidence trail.</div>
-            <div className="bbo-source-note"><span className={`bbo-dot ${dataMode === 'live' ? 'green' : 'blue'}`} />{dataMode === 'live' ? 'Live backend policy library loaded' : 'Using deterministic YAML/mock policy library — fail-closed demo safe'}</div>
+            <div className="bbo-source-note"><span className={`bbo-dot ${dataMode === 'live' ? 'green' : 'blue'}`} />{dataMode === 'live' ? 'Live backend policy library loaded' : 'Using local YAML policy library — fail-closed, offline-safe'}</div>
           </div>
           <div className="bbo-gateway-badge"><div className="bbo-gateway-icon"><Shield size={15} /></div><div><div className="bbo-gateway-label">Gateway posture</div><div className="bbo-gateway-val">Fail-closed</div><div className="bbo-gateway-sub">{activeCount} rules active · {blockCount} blocking</div></div></div>
         </section>
@@ -108,7 +108,7 @@ export default function PoliciesPage() {
                     <div className="bbo-policy-right"><span className={`bbo-pill ${outcomeClass(policy.status)}`}>{shortOutcome(policy.status)}</span><button className="bbo-toggle" onClick={(event) => { event.stopPropagation(); togglePolicy(policy.policy_id); }}><span className={`bbo-track ${policy.enabled ? 'on' : 'off'}`}><span className="bbo-thumb" /></span><span className={`bbo-toggle-label ${policy.enabled ? 'on' : 'off'}`}>{policy.enabled ? 'ON' : 'OFF'}</span></button></div>
                   </div>
                   <div className="bbo-policy-desc">{policy.description}</div>
-                  <div className="bbo-policy-footer">{policy.tags.map((tag) => <span className="bbo-tag-pill" key={tag}>{tag}</span>)}{policy.featured && <span className="bbo-pill block"><Star size={9} fill="currentColor" />Powers main replay demo</span>}{policy.linkedIncident && <span className="bbo-ref"><ArrowRight size={9} />{policy.linkedIncident}</span>}</div>
+                  <div className="bbo-policy-footer">{policy.tags.map((tag) => <span className="bbo-tag-pill" key={tag}>{tag}</span>)}{policy.featured && <span className="bbo-pill block"><Star size={9} fill="currentColor" />Active in incident replay</span>}{policy.linkedIncident && <span className="bbo-ref"><ArrowRight size={9} />{policy.linkedIncident}</span>}</div>
                 </article>
               ))}
               {!visible.length && <div className="bbo-empty"><div className="bbo-empty-icon"><Shield size={26} /></div><div>No policies match this filter.</div><button className="bbo-outline-btn" onClick={() => setActiveFilter('all')}>Show all policies</button></div>}

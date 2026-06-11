@@ -118,7 +118,7 @@ export default function IncidentsPage() {
           <Metric label="Incidents" value={incidents.length} tone="blue" sub="Captured sessions" />
           <Metric label="Evidence refs" value={evidenceTotal} tone="blue" sub="Splunk-bound claims" />
           <Metric label="Critical" value={criticalCount} tone="red" sub="High-risk intercepts" />
-          <Metric label="Demo path" value="READY" tone="green" sub="Deterministic replay" small />
+          <Metric label="Offline mode" value="READY" tone="green" sub="No Splunk required" small />
         </section>
         <section className="bbo-main-grid incidents">
           <aside className="bbo-priority-col">

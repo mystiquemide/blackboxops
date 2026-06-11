@@ -5,7 +5,7 @@ flowchart LR
   User[Platform Engineer / SRE / SOC Analyst] --> UI[Streamlit Replay UI]
   UI --> API[FastAPI Backend]
 
-  Agent[Demo AI Ops Agent] --> Gateway[MCP / SPL Safety Gateway]
+  Agent[AI Ops Agent] --> Gateway[MCP / SPL Safety Gateway]
   Gateway --> Policy[Policy Engine - YAML Rules]
   Gateway --> Adapter[Splunk Adapter]
 
@@ -27,7 +27,7 @@ flowchart LR
 
 ## Data Flow
 
-1. Demo AI agent investigates an incident.
+1. AI ops agent investigates an incident.
 2. Agent queries Splunk through the safety gateway.
 3. Gateway checks SPL scope, risky patterns, time range, and prompt-injection risks.
 4. Splunk adapter returns evidence from mock JSONL or real Splunk.

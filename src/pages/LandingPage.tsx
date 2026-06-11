@@ -82,9 +82,9 @@ const faq = [
     answer: 'Every agent decision, Splunk-style query, evidence reference, policy check, approval gate, and remediation attempt is captured as a replayable event trail, with claims bound to evidence_refs instead of vibes.',
   },
   {
-    eyebrow: 'Mock-first demo',
+    eyebrow: 'Offline-ready',
     question: 'Does it require a live Splunk instance?',
-    answer: 'No. The deterministic mock path runs offline for judging reliability. The same adapter boundary is ready for Splunk HEC, Search, and MCP hooks when a real Splunk environment is available.',
+    answer: 'No. BlackBoxOps runs fully offline with a deterministic incident dataset — no Splunk required to evaluate the product. The same adapter boundary connects to Splunk HEC, Search, and MCP when a live environment is available.',
   },
   {
     eyebrow: 'Fail-closed safety',
@@ -412,7 +412,7 @@ export default function LandingPage() {
         <div className="lp-faq-shell">
           <aside className="lp-faq-card lp-reveal" aria-label="BlackBoxOps trust posture">
             <div className="lp-faq-topline"><span>Trust posture</span><i /> Live guardrails</div>
-            <h3>Designed for judges, SREs, and platform teams who need proof under pressure.</h3>
+            <h3>Designed for SREs, platform engineers, and AI ops teams who need proof under pressure.</h3>
             <p>BlackBoxOps turns autonomous ops activity into a governed evidence trail: recorded, replayable, and policy-gated before production impact.</p>
             <div className="lp-proof">
               <div><b>100%</b><span>mock-runnable</span></div>
@@ -438,13 +438,13 @@ export default function LandingPage() {
       <section className="lp-final" data-track="view">
         <div className="lp-final-glow" aria-hidden="true" />
         <h2>When agents act,<br />BlackBoxOps remembers.</h2>
-        <p>Run the deterministic incident replay and inspect the proof chain yourself.</p>
+        <p>Run a live incident replay and inspect the full evidence chain yourself.</p>
         <button className="lp-cta" onClick={() => navigate('/signin?next=%2Fincidents')}><Play size={13} fill="currentColor" /> Launch app</button>
       </section>
 
       <footer className="lp-footer">
         <Logo />
-        <div><span>Product</span><a href="#product">Replay room</a><a href="#features">Capabilities</a><button onClick={() => navigate('/signin?next=%2Fdashboard')}>Replay demo</button></div>
+        <div><span>Product</span><a href="#product">Replay room</a><a href="#features">Capabilities</a><button onClick={() => navigate('/signin?next=%2Fdashboard')}>Live replay</button></div>
         <div><span>Safety</span><button onClick={() => navigate('/signin?next=%2Fpolicies')}>Policies</button><a href="#architecture">Fail-closed gateway</a></div>
         <div className="lp-footer-status">
           <div className="lp-socials" aria-label="Social links coming soon">

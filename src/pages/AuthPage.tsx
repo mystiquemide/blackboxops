@@ -48,7 +48,7 @@ export default function AuthPage() {
   const [error, setError] = useState(searchParams.get('error') ? 'Authentication failed. Try again or use email and password.' : '');
 
   const headline = useMemo(
-    () => mode === 'signin' ? 'Log in with your existing BlackBoxOps operator credentials.' : 'Create a new BlackBoxOps operator account for this demo workspace.',
+    () => mode === 'signin' ? 'Log in with your existing BlackBoxOps operator credentials.' : 'Create a new BlackBoxOps operator account for your workspace.',
     [mode],
   );
 
@@ -146,7 +146,7 @@ export default function AuthPage() {
               {submitting ? 'Securing workspace...' : mode === 'signin' ? 'Log in to dashboard' : 'Create account'}
             </button>
             <button className="auth-demo-button" onClick={continueWithDemo} type="button">
-              <Sparkles size={15} /> Enter judge demo
+              <Sparkles size={15} /> Try free workspace
             </button>
             <div className="auth-divider"><span /> Optional OAuth <span /></div>
             <button className="auth-primary auth-google" onClick={continueWithGoogle} type="button">
@@ -155,8 +155,8 @@ export default function AuthPage() {
             </button>
             <p className="auth-helper">
               {mode === 'signin'
-                ? 'Log in with existing credentials, or enter the judge demo for the deterministic Splunk replay.'
-                : 'Create a new local operator account. The judge demo remains available if OAuth is not configured.'}
+                ? 'Log in with existing credentials, or try the free workspace to explore the incident replay.'
+                : 'Create a new operator account, or use the free workspace to explore BlackBoxOps without signing up.'}
             </p>
           </form>
         </div>
