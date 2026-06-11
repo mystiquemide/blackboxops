@@ -41,5 +41,6 @@ export const api = {
   demoSession: () => request<AuthSession>('/auth/demo', { method: 'POST' }),
   me: (token: string) => request<AuthUser>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
   patchPolicy: (policyId: string, enabled: boolean) => request<PolicySummary>(`/policies/${policyId}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+  updateProfile: (payload: { name?: string; current_password?: string; new_password?: string }) => request<AuthUser>('/auth/profile', { method: 'PATCH', body: JSON.stringify(payload) }),
   googleLoginUrl: () => '/api/auth/google/login',
 };

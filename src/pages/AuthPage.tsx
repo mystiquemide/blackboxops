@@ -123,26 +123,51 @@ export default function AuthPage() {
 
           {/* Sandbox — primary path */}
           <div className="auth-sandbox-block">
-            <div className="auth-sandbox-header">
-              <div className="auth-sandbox-eyebrow">Interactive sandbox</div>
-              <div className="auth-sandbox-title">See BlackBoxOps in action</div>
-              <p className="auth-sandbox-sub">Pre-loaded with a live incident: prompt injection detected, unsafe query blocked, approval gate triggered.</p>
+            <div className="auth-sandbox-live-bar">
+              <span className="auth-sandbox-live-dot" />
+              <span className="auth-sandbox-live-label">LIVE</span>
+              <span className="auth-sandbox-live-id">incident-2924 · prompt injection</span>
             </div>
-            <div className="auth-sandbox-proof">
-              <span><ShieldX size={11} /> Injection blocked</span>
-              <span><TriangleAlert size={11} /> Query intercepted</span>
-              <span><CheckCircle size={11} /> Postmortem ready</span>
+            <div className="auth-sandbox-inner">
+              <div className="auth-sandbox-title">See BlackBoxOps intercept an injection</div>
+              <p className="auth-sandbox-sub">Pre-loaded incident playing back now. Explore it after you enter.</p>
+              <div className="auth-sandbox-trace">
+                <div className="auth-sandbox-trace-row">
+                  <span className="ast-dot" />
+                  <div className="ast-body">
+                    <span className="ast-tool">splunk_run_query</span>
+                    <code className="ast-code">SELECT * FROM users WHERE id = :id OR 1=1</code>
+                  </div>
+                  <span className="ast-tag ast-tag-logged">logged</span>
+                </div>
+                <div className="auth-sandbox-trace-row ast-row-danger">
+                  <span className="ast-dot ast-dot-red" />
+                  <div className="ast-body">
+                    <span className="ast-tool ast-tool-red">policy_gate</span>
+                    <code className="ast-code ast-code-red">injection_detected · BLOCKED</code>
+                  </div>
+                  <span className="ast-tag ast-tag-blocked">blocked</span>
+                </div>
+                <div className="auth-sandbox-trace-row">
+                  <span className="ast-dot ast-dot-green" />
+                  <div className="ast-body">
+                    <span className="ast-tool ast-tool-green">postmortem_seal</span>
+                    <code className="ast-code ast-code-green">evidence_sealed · confidence 0.94</code>
+                  </div>
+                  <span className="ast-tag ast-tag-ready">ready</span>
+                </div>
+              </div>
+              <button
+                className="auth-sandbox-cta"
+                onClick={exploreSandbox}
+                disabled={sandboxLoading}
+                type="button"
+              >
+                <Play size={13} fill="currentColor" />
+                {sandboxLoading ? 'Loading sandbox...' : 'Explore sandbox'}
+              </button>
+              <p className="auth-sandbox-note">No account required. Sandbox resets each session.</p>
             </div>
-            <button
-              className="auth-sandbox-cta"
-              onClick={exploreSandbox}
-              disabled={sandboxLoading}
-              type="button"
-            >
-              <Play size={13} fill="currentColor" />
-              {sandboxLoading ? 'Loading sandbox...' : 'Explore sandbox'}
-            </button>
-            <p className="auth-sandbox-note">No account required. Sandbox data resets on each session.</p>
           </div>
 
           <div className="auth-divider"><span /> or sign in to your account <span /></div>

@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
 import PoliciesPage from './pages/PoliciesPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AccountPage from './pages/AccountPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/incidents" element={<ProtectedRoute><IncidentsPage /></ProtectedRoute>} />
         <Route path="/policies" element={<ProtectedRoute><PoliciesPage /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

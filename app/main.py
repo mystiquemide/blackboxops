@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
-from app.auth import AuthSession, AuthUser, SigninRequest, SignupRequest, current_user_from_authorization, signin_user, signup_user
+from app.auth import AuthSession, AuthUser, SigninRequest, SignupRequest, current_user_from_authorization, signin_user, signup_user, update_user_profile
 from app.auth_google import build_google_authorization_url, callback_url_for_session, exchange_google_code_for_session, issue_mock_google_session, use_mock_auth
 from app.demo_agent import INCIDENT_ID, run_demo_incident
 from app.models import ActionProposal, ActionProposalRequest, ActionReviewRequest, ActionReviewResponse, AgentEvent, IncidentReplay, IncidentSummary, PolicyDecision, PolicySummary, Postmortem, utc_now
@@ -34,6 +34,12 @@ class ActionRequest(BaseModel):
     action_type: str
     target: str
     evidence_refs: list[str] = []
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: str | None = None
+    current_password: str | None = None
+    new_password: str | None = None
 
 
 def _truthy(value: str | None, default: bool = False) -> bool:
@@ -71,6 +77,16 @@ def auth_signin(request: SigninRequest) -> AuthSession:
 @app.get("/api/auth/me", response_model=AuthUser)
 def auth_me(user: AuthUser = Depends(current_user_from_authorization)) -> AuthUser:
     return user
+
+
+@app.patch("/api/auth/profile", response_model=AuthUser)
+def auth_patch_profile(body: ProfileUpdateRequest, user: AuthUser = Depends(current_user_from_authorization)) -> AuthUser:
+    return update_user_profile(
+        user,
+        name=body.name,
+        current_password=body.current_password,
+        new_password=body.new_password,
+    )
 
 
 @app.post("/api/auth/demo", response_model=AuthSession)

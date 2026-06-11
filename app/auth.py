@@ -168,6 +168,27 @@ def upsert_oauth_user(*, email: str, name: str, provider: str, provider_user_id:
     return _issue_session(record)
 
 
+def update_user_profile(user: AuthUser, *, name: str | None = None, current_password: str | None = None, new_password: str | None = None) -> AuthUser:
+    records = _load_records()
+    for record in records:
+        if record["user_id"] == user.user_id:
+            if new_password is not None:
+                if record.get("provider", "local") != "local":
+                    raise HTTPException(status_code=400, detail="Password change not available for OAuth accounts")
+                if not current_password:
+                    raise HTTPException(status_code=400, detail="Current password required")
+                if not _verify_password(current_password, record.get("password_salt", ""), record.get("password_hash", "")):
+                    raise HTTPException(status_code=401, detail="Current password is incorrect")
+                salt, password_hash = _hash_password(new_password)
+                record["password_salt"] = salt
+                record["password_hash"] = password_hash
+            if name is not None:
+                record["name"] = name.strip() or record.get("name") or user.email
+            _write_records(records)
+            return _public_user(record)
+    raise HTTPException(status_code=404, detail="User not found")
+
+
 def current_user_from_authorization(authorization: Annotated[str | None, Header()] = None) -> AuthUser:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
