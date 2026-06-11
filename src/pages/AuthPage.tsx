@@ -46,7 +46,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sandboxLoading, setSandboxLoading] = useState(false);
-  const [error, setError] = useState(searchParams.get('error') ? 'Authentication failed. Try again or use email and password.' : '');
+  const [error, setError] = useState(searchParams.get('error') ? 'Google sign-in was cancelled or failed. Use email and password below, or try again.' : '');
 
   const headline = useMemo(
     () => mode === 'signin'
@@ -59,6 +59,17 @@ export default function AuthPage() {
     setMode(nextMode);
     setError('');
     navigate(nextMode === 'signin' ? '/signin' : '/signup', { replace: true });
+  }
+
+  function friendlyError(err: unknown, fallback: string): string {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('already exists')) return 'An account with that email already exists. Try signing in instead.';
+    if (msg.includes('Invalid email or password')) return 'Wrong email or password. Double-check and try again.';
+    if (msg.includes('Missing bearer') || msg.includes('Invalid bearer')) return 'Your session expired. Sign in again.';
+    if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')) return 'Connection error. Check your internet and try again.';
+    if (msg.includes('422') || msg.includes('validation')) return 'Check your details and try again.';
+    if (msg) return msg;
+    return fallback;
   }
 
   async function submitLocalAuth(event: React.FormEvent<HTMLFormElement>) {
@@ -74,7 +85,7 @@ export default function AuthPage() {
       const next = searchParams.get('next');
       navigate(next && next.startsWith('/') ? next : '/dashboard', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      setError(friendlyError(err, mode === 'signin' ? 'Sign in failed. Try again.' : 'Could not create account. Try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -94,7 +105,7 @@ export default function AuthPage() {
       const next = searchParams.get('next');
       navigate(next && next.startsWith('/') ? next : '/incidents', { replace: true });
     } catch {
-      setError('Sandbox unavailable. Use email and password to sign in.');
+      setError('Sandbox is unavailable right now. Sign in with email and password to continue.');
       setSandboxLoading(false);
     }
   }
