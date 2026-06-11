@@ -72,7 +72,7 @@ USE_MOCK_SPLUNK=true USE_MOCK_AUTH=true uvicorn app.main:app --reload --port 800
 npm run dev
 ```
 
-Open the Vite URL, click `Enter judge demo`, then open the replay dashboard.
+Open the Vite URL, click `Try free workspace`, then open the replay dashboard.
 
 Build and serve the production React UI from FastAPI:
 
@@ -96,9 +96,9 @@ Streamlit fallback UI:
 streamlit run app/ui.py
 ```
 
-## Mock-first reliability
+## Offline reliability
 
-The demo works offline with:
+BlackBoxOps works without any Splunk instance:
 
 ```bash
 export USE_MOCK_SPLUNK=true
@@ -122,7 +122,7 @@ BlackBoxOps is structured around a single adapter boundary in `app/splunk_adapte
 
 | Mode | Env | What it does |
 |---|---|---|
-| Mock (default) | `USE_MOCK_SPLUNK=true` | Deterministic sample dataset, runs offline, used for judging |
+| Offline (default) | `USE_MOCK_SPLUNK=true` | Deterministic sample dataset, runs without any Splunk instance |
 | Splunk MCP Server | `USE_MOCK_SPLUNK=false USE_SPLUNK_MCP=true` | Calls the official [Splunk MCP Server](https://splunkbase.splunk.com/app/7931) over streamable HTTP with Bearer token auth |
 | Splunk REST | `USE_MOCK_SPLUNK=false` | Direct search jobs against the Splunk REST API |
 
