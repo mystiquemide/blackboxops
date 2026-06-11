@@ -75,3 +75,49 @@ def test_duplicate_signup_is_rejected():
 
     assert first.status_code == 200
     assert second.status_code == 409
+
+
+def test_expired_session_token_is_rejected():
+    from datetime import UTC, datetime, timedelta
+
+    from app import auth
+
+    client = TestClient(app)
+    signup = client.post(
+        "/api/auth/signup",
+        json={"email": "expiry@example.com", "password": "expiry-pass-123", "name": "Expiry"},
+    )
+    token = signup.json()["token"]
+
+    # Fresh token works.
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"}).status_code == 200
+
+    # Force the stored session to be in the past.
+    records = auth._load_records()
+    for record in records:
+        for entry in record.get("sessions", []):
+            entry["expires_at"] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    auth._write_records(records)
+
+    assert client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"}).status_code == 401
+
+
+def test_legacy_string_session_token_is_rejected():
+    from app import auth
+
+    client = TestClient(app)
+    signup = client.post(
+        "/api/auth/signup",
+        json={"email": "legacy@example.com", "password": "legacy-pass-123", "name": "Legacy"},
+    )
+    user_id = signup.json()["user"]["user_id"]
+
+    # Simulate a pre-migration session stored as a bare string token.
+    records = auth._load_records()
+    for record in records:
+        if record["user_id"] == user_id:
+            record["sessions"] = ["legacy-plain-token"]
+    auth._write_records(records)
+
+    response = client.get("/api/auth/me", headers={"Authorization": "Bearer legacy-plain-token"})
+    assert response.status_code == 401

@@ -5,7 +5,7 @@ import hmac
 import json
 import os
 import secrets
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, field_validator
 
 AUTH_STORE_PATH = Path(os.getenv("BLACKBOXOPS_AUTH_STORE", "data/auth_users.jsonl"))
 _MIN_PASSWORD_LENGTH = 8
+_SESSION_TTL_HOURS = int(os.getenv("BLACKBOXOPS_SESSION_TTL_HOURS", "24"))
 
 
 class AuthUser(BaseModel):
@@ -95,12 +96,38 @@ def _public_user(record: dict) -> AuthUser:
     )
 
 
+def _now() -> datetime:
+    return datetime.now(UTC)
+
+
+def _prune_expired(sessions: list) -> list:
+    """Drop expired and legacy (non-dict / unparseable) session entries."""
+    now = _now()
+    live = []
+    for entry in sessions:
+        if not isinstance(entry, dict):
+            continue  # legacy bare-string token: force re-authentication
+        expires_at = entry.get("expires_at")
+        if not expires_at:
+            continue
+        try:
+            if datetime.fromisoformat(expires_at) > now:
+                live.append(entry)
+        except ValueError:
+            continue
+    return live
+
+
 def _issue_session(record: dict) -> AuthSession:
     records = _load_records()
     token = secrets.token_urlsafe(32)
+    expires_at = (_now() + timedelta(hours=_SESSION_TTL_HOURS)).isoformat()
+    session_entry = {"token": token, "expires_at": expires_at}
     for stored in records:
         if stored["user_id"] == record["user_id"]:
-            stored.setdefault("sessions", []).append(token)
+            kept = _prune_expired(stored.get("sessions", []))
+            kept.append(session_entry)
+            stored["sessions"] = kept
             record = stored
             break
     _write_records(records)
@@ -193,7 +220,18 @@ def current_user_from_authorization(authorization: Annotated[str | None, Header(
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
     token = authorization.removeprefix("Bearer ").strip()
+    now = _now()
     for record in _load_records():
-        if token in record.get("sessions", []):
+        for entry in record.get("sessions", []):
+            if not isinstance(entry, dict) or entry.get("token") != token:
+                continue
+            expires_at = entry.get("expires_at")
+            if not expires_at:
+                continue
+            try:
+                if datetime.fromisoformat(expires_at) <= now:
+                    raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
+            except ValueError:
+                continue
             return _public_user(record)
     raise HTTPException(status_code=401, detail="Invalid bearer token")
