@@ -1,178 +1,122 @@
-# ARCHITECTURE — BlackBoxOps
+# Architecture — BlackBoxOps
 
-## 1. System Architecture
+## System Overview
 
-BlackBoxOps sits between AI operations agents and Splunk. It records agent actions, validates Splunk MCP/SPL interactions, enforces policies, stores evidence, and provides replay/postmortem UI.
+BlackBoxOps sits between AI operations agents and Splunk. It records agent actions, validates Splunk MCP/SPL interactions, enforces policies, stores evidence, and provides a replay and postmortem UI.
 
-Actors:
-- Platform Engineer: configures policies and reviews agent behavior.
-- SRE/SOC Analyst: replays incidents and reads evidence-backed postmortems.
-- AI Ops Agent: investigates incidents and proposes actions.
-- Splunk: operational evidence store and query engine.
+**Actors:**
+- Platform Engineer: configures policies and reviews agent behavior
+- SRE / SOC Analyst: replays incidents and reads evidence-backed postmortems
+- AI Ops Agent: investigates incidents and proposes remediation actions
+- Splunk: operational evidence store and query engine
 
-Containers:
-- Streamlit UI: dashboard, incident replay, evidence cards, postmortem viewer.
-- FastAPI Backend: API endpoints, event recording, demo runner, postmortem generation.
-- Policy Engine: YAML-driven safety rules for SPL queries, log-content risks, and action approvals.
-- Splunk Adapter: mock mode plus real Splunk HEC/search/MCP integration hooks.
-- Event Store: local JSONL in mock mode, Splunk index in Splunk mode.
-- Demo Agent: deterministic agent scenario for hackathon demo.
+## Components
 
-Components:
-- models.py: Pydantic models.
-- recorder.py: writes AgentEvent records.
-- splunk_adapter.py: mock and real Splunk query/ingest interface.
-- policy_engine.py: evaluates query/content/action rules.
-- demo_agent.py: runs full incident scenario.
-- postmortem.py: builds markdown summary from replay events.
-- main.py: FastAPI routes.
-- ui.py: Streamlit UI.
+| Component | Responsibility |
+|---|---|
+| React UI | Landing, auth, incident directory, replay room, policy gateway |
+| FastAPI Backend | API routes, event recording, postmortem generation |
+| Policy Engine | YAML-driven safety rules: block, warn, allow, approval_required |
+| Splunk Adapter | Unified interface for MCP, REST, and offline mode |
+| Event Store | Local JSONL in offline mode, Splunk index in live mode |
+| Agent Scenario | Deterministic incident scenario for replay demonstration |
 
-## 2. Tech Stack
+## Tech Stack
 
-- Python 3.11+: fastest solo implementation.
-- FastAPI: simple JSON API and future extensibility.
-- Streamlit: fastest polished dashboard for hackathon demo.
-- Pydantic: strict event schema validation.
-- PyYAML: readable policy rules.
-- JSONL: lightweight mock event store.
-- Splunk HEC/Search/MCP: real integration path; mock fallback protects demo schedule.
-- pytest: quick policy and end-to-end tests.
+- Python 3.11+ with FastAPI
+- React 19 + TypeScript + Vite
+- Pydantic for strict event schema validation
+- PyYAML for readable, operator-editable policy rules
+- JSONL for lightweight offline event store
+- Splunk MCP Server (streamable-HTTP), Splunk REST API, Splunk HEC
+- pytest
 
-## 3. Folder Structure
+## Folder Structure
 
+```
 blackboxops/
-  README.md
-  LICENSE
-  .env.example
-  requirements.txt
-  architecture_diagram.md
-  AGENTS.md
-  memory.md
   app/
-    __init__.py
-    main.py
-    ui.py
-    models.py
-    recorder.py
-    splunk_adapter.py
-    policy_engine.py
-    demo_agent.py
-    postmortem.py
+    main.py            FastAPI routes
+    models.py          Pydantic event/evidence/policy models
+    recorder.py        JSONL event recorder
+    splunk_adapter.py  Mock + MCP + REST Splunk adapter
+    policy_engine.py   YAML-driven safety rules
+    demo_agent.py      Deterministic incident scenario runner
+    postmortem.py      Evidence-backed postmortem generator
+    auth.py            Local email/password auth
+    auth_google.py     Google OAuth flow
+    ui.py              Streamlit fallback UI
+  src/                 React + TypeScript frontend
+  policies/
+    default.yaml       Default safety rules
   data/
     sample_incidents.jsonl
     sample_splunk_events.jsonl
-    blackbox_events.jsonl
-  policies/
-    default.yaml
   scripts/
-    run_demo.py
-    seed_data.py
-  tests/
-    test_policy_engine.py
-    test_demo_flow.py
-  docs/
-    PRD.md
-    COMPETITOR_RESEARCH.md
-    TASKS.md
-    ARCHITECTURE.md
-    DESIGN.md
-    ANALYTICS.md
-    DEVPOST_SUBMISSION.md
-    DEMO_SCRIPT.md
+    run_demo.py        CLI demo runner
+    seed_splunk.py     Splunk data seeding via REST
+  tests/               pytest suite
+  docs/                Architecture, deployment, security
+```
 
-## 4. Data Models
+## Data Models
 
-AgentEvent:
-- event_id
-- incident_id
-- session_id
-- timestamp
-- event_type: prompt | response | spl_query | evidence | policy_check | action_proposal | approval | remediation_result
-- actor
-- risk_score
-- summary
-- payload
-- evidence_refs
+**AgentEvent** — one recorded step in the agent's operation chain:
+- `event_id`, `incident_id`, `session_id`, `timestamp`
+- `event_type`: prompt | spl_query | evidence | policy_check | action_proposal | approval
+- `actor`, `risk_score`, `summary`, `payload`, `evidence_refs`
 
-EvidenceRef:
-- evidence_id
-- query
-- time_range
-- source: mock_splunk | splunk_mcp | splunk_search_api
-- sample_event
-- confidence
-- risk_flags
+**EvidenceRef** — a Splunk query result bound to an agent claim:
+- `evidence_id`, `query`, `time_range`
+- `source`: offline | splunk_mcp | splunk_search_api
+- `sample_event`, `confidence`, `risk_flags`
 
-PolicyDecision:
-- decision_id
-- policy_id
-- status: allow | block | approval_required | warn
-- reason
-- risk_level: low | medium | high | critical
-- matched_rules
-- required_approval
+**PolicyDecision** — the safety gateway's verdict on an action or query:
+- `decision_id`, `policy_id`
+- `status`: allow | block | approval_required | warn
+- `reason`, `risk_level`, `matched_rules`
 
-IncidentReplay:
-- incident_id
-- title
-- status
-- events
-- evidence
-- policy_decisions
+## API Routes
 
-## 5. API Contracts
+```
+GET  /api/health
+POST /api/demo/run
+GET  /api/incidents
+GET  /api/incidents/{id}/replay
+GET  /api/incidents/{id}/postmortem
+POST /api/actions/propose
+POST /api/actions/{id}/approve
+POST /api/actions/{id}/reject
+GET  /api/policies
+PATCH /api/policies/{id}
+POST /api/auth/signup
+POST /api/auth/signin
+POST /api/auth/demo
+GET  /api/auth/me
+GET  /api/auth/google/login
+GET  /api/auth/google/callback
+```
 
-GET /health
-- Returns service status.
+## Failure Design
 
-POST /demo/run
-- Runs deterministic demo scenario.
-- Returns IncidentReplay JSON.
+- Splunk unavailable: `USE_MOCK_SPLUNK=true` falls back to local JSONL evidence dataset
+- MCP unreachable: error degrades to a descriptive evidence card, replay continues
+- Bad policy YAML: fail closed, block all high-risk actions
+- Empty evidence: agent cannot propose remediation; postmortem records insufficient evidence
 
-GET /incidents
-- Returns list of incidents.
+## Architecture Decisions
 
-GET /incidents/{incident_id}/replay
-- Returns full replay timeline.
+**ADR-001: Unified adapter boundary**
+All Splunk access goes through `splunk_adapter.py`. MCP, REST, and offline mode are interchangeable behind the same interface. Callers never know which mode is active.
 
-GET /incidents/{incident_id}/postmortem
-- Returns markdown postmortem.
+**ADR-002: Mock-first with live integration hooks**
+The offline incident dataset makes the product evaluable without infrastructure. The same adapter connects to a real Splunk MCP Server when available.
 
-POST /policy/evaluate-query
-- Request: query + time_range.
-- Response: PolicyDecision.
+**ADR-003: YAML policy engine**
+Rules live in `policies/default.yaml`. Operators can read, audit, and modify them without touching code.
 
-POST /policy/evaluate-action
-- Request: action_type + target + evidence_refs.
-- Response: PolicyDecision.
+**ADR-004: Evidence-bound postmortems**
+Every claim in a generated postmortem must reference a recorded `evidence_ref`. Unbound claims are not permitted.
 
-## 6. Failure Design
-
-- Splunk unavailable: use USE_MOCK_SPLUNK=true and local JSONL sample data.
-- LLM unavailable: deterministic template summary fallback.
-- MCP unavailable: use Splunk adapter interface with mock query results.
-- Bad policy YAML: fail closed and block high-risk action.
-- Empty evidence: agent cannot propose remediation; postmortem says insufficient evidence.
-
-## 7. ADRs
-
-ADR-001: Use Python + FastAPI + Streamlit
-Decision: Use Python stack for speed.
-Consequence: Faster solo build; less custom UI polish than Next.js but enough for demo.
-
-ADR-002: Mock-first Splunk adapter with real integration hooks
-Decision: Build mock mode first, then connect real Splunk if setup is stable.
-Consequence: Demo is reliable; still shows credible Splunk integration path.
-
-ADR-003: YAML policy engine
-Decision: Store rules in policies/default.yaml.
-Consequence: Easy for judges to read and modify; avoids overbuilding.
-
-ADR-004: Evidence-bound postmortems
-Decision: Every postmortem claim must link to evidence_refs.
-Consequence: Strong differentiation from generic incident copilots.
-
-ADR-005: Submit under Platform & Developer Experience
-Decision: Position as infrastructure for safe Splunk-powered agents.
-Consequence: Avoids crowded generic SOC/observability copilot track while still supporting those use cases.
+**ADR-005: Fail-closed policy gateway**
+If the policy engine cannot load or evaluate a rule, the default outcome is block. No action proceeds on uncertainty.

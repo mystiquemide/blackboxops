@@ -1,103 +1,98 @@
-# BlackBoxOps Deployment Notes
+# Deployment — BlackBoxOps
 
-## Recommended hackathon deployment
+BlackBoxOps serves the React frontend as a static build from FastAPI. The same process handles `/api/*` routes and serves `dist/` at `/`.
 
-Use the React/Vite UI served by FastAPI for the public demo URL. Build the frontend once, then run `app.main:app`; FastAPI keeps `/api/*` routes available and serves the compiled React app from `dist/` at `/`.
+## Environment Variables
 
-The public demo should run in mock mode so judges are not blocked by Splunk or Google credentials.
-
-## Environment
-
-Set:
+Required for offline/mock mode (no external services needed):
 
 ```bash
 USE_MOCK_SPLUNK=true
 USE_MOCK_AUTH=true
-BLACKBOXOPS_EVENT_STORE=data/blackbox_events.jsonl
-BLACKBOXOPS_POLICY_FILE=policies/default.yaml
-BLACKBOXOPS_AUTH_STORE=data/auth_users.jsonl
 ```
 
-Optional production OAuth values:
+Required for production with real auth and Splunk:
 
 ```bash
-FRONTEND_URL=https://<your-demo-host>
-GOOGLE_REDIRECT_URI=https://<your-demo-host>/api/auth/google/callback
+USE_MOCK_SPLUNK=false
+USE_MOCK_AUTH=false
+FRONTEND_URL=https://your-domain.com
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://your-domain.com/api/auth/google/callback
+SESSION_SECRET=<random 64-char hex>
 ```
 
-Optional real Splunk integration keys are documented in `.env.example`; do not set them for the default public demo unless a real Splunk instance is ready.
-
-## Local production smoke run
+Splunk MCP integration:
 
 ```bash
+USE_SPLUNK_MCP=true
+SPLUNK_MCP_URL=https://your-splunk-host:8089/services/mcp/
+SPLUNK_MCP_TOKEN=<token with audience "mcp" and mcp_tool_execute capability>
+SPLUNK_MCP_VERIFY_TLS=false
+```
+
+See `.env.example` for the full list.
+
+## Local Build
+
+```bash
+python -m venv .venv
+source .venv/Scripts/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 npm install
 npm run build
 USE_MOCK_SPLUNK=true USE_MOCK_AUTH=true uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open `http://127.0.0.1:8000`, click `Enter judge demo`, then run the replay dashboard.
+Open `http://127.0.0.1:8000`.
 
-## Railway / Render style deployment
-
-Use the included `Procfile`:
-
-```bash
-web: uvicorn app.main:app --host 0.0.0.0 --port=${PORT:-8000}
-```
+## Railway / Render
 
 Build command:
-
 ```bash
 pip install -r requirements.txt && npm ci && npm run build
 ```
 
-Start command comes from the Procfile.
+Start command (or use the included `Procfile`):
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port=${PORT:-8000}
+```
+
+Set `USE_MOCK_SPLUNK=true` and `USE_MOCK_AUTH=true` in the service environment for the public instance.
 
 ## Docker
 
 ```bash
 docker build -t blackboxops .
-docker run --rm -p 8000:8000 blackboxops
+docker run --rm -p 8000:8000 \
+  -e USE_MOCK_SPLUNK=true \
+  -e USE_MOCK_AUTH=true \
+  blackboxops
 ```
 
-Or:
+Or with Compose:
 
 ```bash
 docker compose up --build
 ```
 
-## Streamlit fallback
+## Verification
 
-The original Streamlit UI remains available for local fallback demos:
+```bash
+python -m pytest tests/ -q
+python -m compileall app scripts tests -q
+npm run lint
+npm run build
+curl http://localhost:8000/api/health
+```
+
+## Streamlit Fallback
+
+The original Streamlit UI is available for local inspection:
 
 ```bash
 USE_MOCK_SPLUNK=true streamlit run app/ui.py
 ```
 
-Do not use Streamlit as the preferred public URL if the React/FastAPI deployment is stable.
-
-## Pre-submission checks
-
-Run:
-
-```bash
-python -m pytest tests/ -q
-python -m compileall app scripts tests -q
-python scripts/run_demo_checks.py
-npm run lint
-npm run build
-npx -y @google/design.md lint DESIGN.md
-```
-
-## Public demo video path
-
-Record the React UI path:
-1. Landing page: position as Splunk-native evidence and safety layer, not a chatbot.
-2. Click `Enter judge demo`.
-3. Open the replay dashboard and click `Run incident replay`.
-4. Show Splunk evidence cards with evidence_refs.
-5. Show prompt-injection block and unsafe action policy decision.
-6. Show approval-required remediation gate.
-7. Export/show the evidence-backed postmortem.
+Not recommended as the primary public URL when the React/FastAPI deployment is stable.

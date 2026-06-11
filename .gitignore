@@ -27,6 +27,14 @@ memory.md
 AGENTS.md
 DESIGN.md
 
+# Internal planning and research docs (not for public repo)
+docs/PRD.md
+docs/TASKS.md
+docs/COMPETITOR_RESEARCH.md
+docs/DEVPOST_SUBMISSION.md
+docs/DEMO_SCRIPT.md
+docs/ANALYTICS.md
+
 # OS/editor
 .DS_Store
 Thumbs.db
