@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, KeyRound, LogOut, ShieldCheck, User } from 'lucide-react';
 import { api, AUTH_TOKEN_KEY, AUTH_USER_KEY } from '../api';
+import { friendlyError } from '../lib/errors';
 import BboConsoleNav from '../components/BboConsoleNav';
 
 function useCurrentUser() {
@@ -46,7 +47,7 @@ export default function AccountPage() {
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ ...stored, name: updated.name }));
       setProfileMsg({ type: 'ok', text: 'Profile updated.' });
     } catch (err) {
-      setProfileMsg({ type: 'err', text: err instanceof Error ? err.message : 'Update failed.' });
+      setProfileMsg({ type: 'err', text: friendlyError(err, 'Could not update profile. Try again.') });
     } finally {
       setSavingProfile(false);
     }
@@ -66,7 +67,7 @@ export default function AccountPage() {
       setNewPassword('');
       setPasswordMsg({ type: 'ok', text: 'Password updated.' });
     } catch (err) {
-      setPasswordMsg({ type: 'err', text: err instanceof Error ? err.message : 'Update failed.' });
+      setPasswordMsg({ type: 'err', text: friendlyError(err, 'Could not update password. Try again.') });
     } finally {
       setSavingPassword(false);
     }

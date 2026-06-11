@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Fingerprint, LockKeyhole, Play, Radar, ShieldCheck } from 'lucide-react';
 
 import { api, AUTH_TOKEN_KEY, AUTH_USER_KEY } from '../api';
+import { friendlyError } from '../lib/errors';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -59,17 +60,6 @@ export default function AuthPage() {
     setMode(nextMode);
     setError('');
     navigate(nextMode === 'signin' ? '/signin' : '/signup', { replace: true });
-  }
-
-  function friendlyError(err: unknown, fallback: string): string {
-    const msg = err instanceof Error ? err.message : '';
-    if (msg.includes('already exists')) return 'An account with that email already exists. Try signing in instead.';
-    if (msg.includes('Invalid email or password')) return 'Wrong email or password. Double-check and try again.';
-    if (msg.includes('Missing bearer') || msg.includes('Invalid bearer')) return 'Your session expired. Sign in again.';
-    if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')) return 'Connection error. Check your internet and try again.';
-    if (msg.includes('422') || msg.includes('validation')) return 'Check your details and try again.';
-    if (msg) return msg;
-    return fallback;
   }
 
   async function submitLocalAuth(event: React.FormEvent<HTMLFormElement>) {

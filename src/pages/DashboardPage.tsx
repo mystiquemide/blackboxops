@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, Download, Flag, Play, Radar, ShieldAlert, XCi
 
 import BboConsoleNav from '../components/BboConsoleNav';
 import { AUTH_USER_KEY, api } from '../api';
+import { friendlyError } from '../lib/errors';
 import type { ActionProposal, AgentEvent, AuthUser, EvidenceRef, IncidentReplay, PolicyDecision } from '../types';
 
 const mockReplay: IncidentReplay = {
@@ -210,7 +211,7 @@ export default function DashboardPage() {
       setActiveTab('policy');
       await refreshReplay(currentProposal.incident_id);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Unable to propose remediation');
+      setActionError(friendlyError(error, 'Unable to propose remediation. Try again.'));
     } finally {
       setActionBusy(false);
     }
@@ -234,7 +235,7 @@ export default function DashboardPage() {
       setStatus(decision === 'approve' ? 'APPROVED — Signed human decision recorded, connector execution pending' : 'REJECTED — Signed human decision recorded, no action executed');
       await refreshReplay(actionProposal.incident_id);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : `Unable to ${decision} remediation`);
+      setActionError(friendlyError(error, `Unable to ${decision} this action. Try again.`));
     } finally {
       setActionBusy(false);
     }
