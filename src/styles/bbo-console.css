@@ -237,6 +237,10 @@
 .bbo-user-trigger { display: flex; align-items: center; gap: 7px; padding: 5px 8px 5px 5px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.04); color: var(--bbo-text); cursor: pointer; font: 600 12px var(--bbo-display); transition: all .15s; }
 .bbo-user-trigger:hover { border-color: rgba(99,102,241,.4); background: rgba(99,102,241,.08); }
 .bbo-user-trigger .bbo-avatar { width: 22px; height: 22px; border-radius: 50%; border-color: rgba(99,102,241,.35); background: rgba(99,102,241,.25); color: var(--bbo-accent); font: 700 9px var(--bbo-mono); }
+.bbo-avatar-photo { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(99,102,241,.35); }
+.bbo-dropdown-header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.bbo-dropdown-avatar-photo { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(99,102,241,.3); }
+.bbo-dropdown-avatar-initials { display: grid; width: 34px; height: 34px; flex-shrink: 0; place-items: center; border: 1px solid rgba(99,102,241,.35); border-radius: 50%; background: rgba(99,102,241,.2); color: var(--bbo-accent); font: 700 11px var(--bbo-mono); }
 .bbo-user-name { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bbo-chevron { color: var(--bbo-muted); transition: transform .18s; }
 .bbo-chevron.open { transform: rotate(180deg); }

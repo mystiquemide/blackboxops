@@ -15,7 +15,7 @@ function userInitials(name: string): string {
 function useCurrentUser() {
   const raw = localStorage.getItem(AUTH_USER_KEY);
   if (!raw) return null;
-  try { return JSON.parse(raw) as { name: string; email: string; provider: string }; }
+  try { return JSON.parse(raw) as { name: string; email: string; provider: string; picture?: string }; }
   catch { return null; }
 }
 
@@ -79,7 +79,9 @@ export default function BboConsoleNav() {
               aria-haspopup="true"
               aria-expanded={menuOpen}
             >
-              <span className="bbo-avatar">{userInitials(user.name)}</span>
+              {user.picture
+                ? <img className="bbo-avatar bbo-avatar-photo" src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
+                : <span className="bbo-avatar">{userInitials(user.name)}</span>}
               <span className="bbo-user-name">{user.name.split(' ')[0]}</span>
               <ChevronDown size={12} className={menuOpen ? 'bbo-chevron open' : 'bbo-chevron'} />
             </button>
@@ -87,8 +89,15 @@ export default function BboConsoleNav() {
             {menuOpen && (
               <div className="bbo-dropdown" role="menu">
                 <div className="bbo-dropdown-header">
-                  <div className="bbo-dropdown-name">{user.name}</div>
-                  <div className="bbo-dropdown-email">{user.email}</div>
+                  <div className="bbo-dropdown-header-top">
+                    {user.picture
+                      ? <img className="bbo-dropdown-avatar-photo" src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
+                      : <span className="bbo-dropdown-avatar-initials">{userInitials(user.name)}</span>}
+                    <div>
+                      <div className="bbo-dropdown-name">{user.name}</div>
+                      <div className="bbo-dropdown-email">{user.email}</div>
+                    </div>
+                  </div>
                   <span className="bbo-dropdown-provider">{user.provider}</span>
                 </div>
                 <div className="bbo-dropdown-divider" />
