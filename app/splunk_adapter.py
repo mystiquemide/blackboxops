@@ -10,6 +10,17 @@ from app.models import EvidenceRef
 _MCP_SEARCH_TOOL_PRIORITY = ("splunk_run_query", "run_splunk_search", "run_search", "search", "run_spl_search", "splunk_search")
 
 
+def _splunk_tls_verify() -> bool:
+    """TLS verification for Splunk REST/HEC calls.
+
+    Defaults to verifying certificates. Operators who must talk to a Splunk
+    instance with a self-signed certificate can opt out explicitly by setting
+    SPLUNK_VERIFY_TLS=false, which keeps the insecure path a deliberate choice
+    rather than a silent default.
+    """
+    return os.getenv("SPLUNK_VERIFY_TLS", "true").strip().lower() not in {"0", "false", "no", "off"}
+
+
 def _pick_search_tool(tools: list[Any]) -> Any | None:
     """Pick the SPL search tool from the Splunk MCP server's tool listing."""
     by_name = {tool.name.lower(): tool for tool in tools}
@@ -153,7 +164,7 @@ class SplunkAdapter:
         url = os.getenv("SPLUNK_MCP_URL") or f"https://{host}:{port}/services/mcp/"
         token = os.getenv("SPLUNK_MCP_TOKEN", "")
         headers = {"Authorization": f"Bearer {token}"} if token else {}
-        verify = os.getenv("SPLUNK_MCP_VERIFY_TLS", "false").lower() == "true"
+        verify = os.getenv("SPLUNK_MCP_VERIFY_TLS", "true").strip().lower() not in {"0", "false", "no", "off"}
 
         async with streamablehttp_client(url, headers=headers, httpx_client_factory=_httpx_factory(verify)) as (read, write, _):
             async with ClientSession(read, write) as session:
@@ -202,7 +213,9 @@ class SplunkAdapter:
         import requests
         from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore[attr-defined]
 
-        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+        verify_tls = _splunk_tls_verify()
+        if not verify_tls:
+            warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
         host = os.getenv("SPLUNK_HOST", "localhost")
         port = int(os.getenv("SPLUNK_PORT", "8089"))
@@ -221,7 +234,7 @@ class SplunkAdapter:
                     "latest_time": "now",
                     "count": 10,
                 },
-                verify=False,
+                verify=verify_tls,
                 timeout=30,
             )
             create.raise_for_status()
@@ -232,7 +245,7 @@ class SplunkAdapter:
                     f"{base}/services/search/jobs/{sid}",
                     headers=headers,
                     params={"output_mode": "json"},
-                    verify=False,
+                    verify=verify_tls,
                     timeout=10,
                 )
                 if poll.json()["entry"][0]["content"]["isDone"]:
@@ -243,7 +256,7 @@ class SplunkAdapter:
                 f"{base}/services/search/jobs/{sid}/results",
                 headers=headers,
                 params={"output_mode": "json", "count": 10},
-                verify=False,
+                verify=verify_tls,
                 timeout=10,
             )
             rows = results_resp.json().get("results", [])
@@ -291,7 +304,9 @@ class SplunkAdapter:
         import requests
         from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore[attr-defined]
 
-        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+        verify_tls = _splunk_tls_verify()
+        if not verify_tls:
+            warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
         host = os.getenv("SPLUNK_HOST", "localhost")
         hec_port = int(os.getenv("SPLUNK_HEC_PORT", "8088"))
@@ -303,7 +318,7 @@ class SplunkAdapter:
                 f"https://{host}:{hec_port}/services/collector",
                 headers={"Authorization": f"Splunk {token}"},
                 json={"event": event, "sourcetype": "blackboxops:agent_event"},
-                verify=False,
+                verify=verify_tls,
                 timeout=5,
             )
             return resp.status_code == 200
