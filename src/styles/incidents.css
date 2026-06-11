@@ -10,14 +10,14 @@
 .incident-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--splunkGreen); font: 700 11px var(--font-mono); letter-spacing: .16em; text-transform: uppercase; }
 .incidents-hero h1 { max-width: 930px; margin-top: 18px; color: #f7f8f8; font-size: clamp(2.8rem,5vw,5.55rem); font-weight: 500; letter-spacing: -.07em; line-height: .92; }
 .incidents-hero p { max-width: 735px; margin-top: 18px; color: #99a6a7; font-size: 17px; line-height: 1.65; }
-.incident-live-panel,.incident-metric-card,.incident-card,.incident-proof-panel,.incidents-directory-panel,.incident-row-card,.incident-empty-state { border: 1px solid rgba(255,255,255,.09); background: linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.022)); box-shadow: inset 0 1px rgba(255,255,255,.075), 0 26px 70px rgba(0,0,0,.24); backdrop-filter: blur(18px); }
+.incident-live-panel,.incident-metric-card,.incident-card,.incident-proof-panel,.incidents-directory-panel,.incident-row-card,.incident-empty-state { border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.036); box-shadow: inset 0 1px rgba(255,255,255,.075), 0 26px 70px rgba(0,0,0,.24); backdrop-filter: blur(18px); }
 .incident-live-panel { position: relative; min-height: 198px; overflow: hidden; padding: 22px; border-radius: 26px; }
 .incident-live-panel::after { position: absolute; right: -54px; bottom: -70px; width: 180px; height: 180px; content: ''; border: 1px solid rgba(101,166,55,.18); border-radius: 50%; background: radial-gradient(circle,rgba(101,166,55,.16),transparent 60%); }
 .incident-live-panel span,.incident-metric-card span { color: #7f8b91; font: 700 10px var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
 .incident-live-panel strong { display: block; margin-top: 18px; color: #f3f6f2; font-size: 2.35rem; letter-spacing: -.055em; }
 .incident-live-panel p { position: relative; z-index: 1; margin-top: 10px; color: #8d999b; font-size: 13px; line-height: 1.6; }
 .incident-signal-bars { position: absolute; right: 20px; bottom: 18px; left: 20px; display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-.incident-signal-bars i { height: 3px; border-radius: 999px; background: linear-gradient(90deg,var(--splunkGreen),rgba(56,189,248,.42)); box-shadow: 0 0 18px rgba(101,166,55,.28); opacity: .72; animation: ctaSignal 1.9s ease-in-out infinite; }
+.incident-signal-bars i { height: 3px; border-radius: 999px; background: var(--splunkGreen); box-shadow: 0 0 18px rgba(101,166,55,.28); opacity: .72; animation: ctaSignal 1.9s ease-in-out infinite; }
 .incident-signal-bars i:nth-child(2) { animation-delay: -.45s; }.incident-signal-bars i:nth-child(3) { animation-delay: -.9s; }.incident-signal-bars i:nth-child(4) { animation-delay: -1.35s; }
 .incident-metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-top: 18px; }
 .incident-metric-card { position: relative; min-height: 150px; overflow: hidden; padding: 18px; border-radius: 22px; }
@@ -29,8 +29,8 @@
 .incident-focus-column { display: flex; flex-direction: column; gap: 14px; }
 .incident-card,.incident-proof-panel,.incidents-directory-panel { border-radius: 28px; }
 .incident-card { position: relative; overflow: hidden; padding: 20px; cursor: pointer; transition: transform .25s, border-color .25s, background .25s; }
-.incident-card:hover,.incident-row-card:hover { border-color: rgba(56,189,248,.28); background: linear-gradient(180deg,rgba(56,189,248,.07),rgba(255,255,255,.025)); transform: translateY(-2px); }
-.incident-card-featured { border-color: rgba(239,68,68,.26); background: radial-gradient(circle at 92% 10%,rgba(239,68,68,.13),transparent 34%), linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.024)); }
+.incident-card:hover,.incident-row-card:hover { border-color: rgba(56,189,248,.28); background: rgba(56,189,248,.05); transform: translateY(-2px); }
+.incident-card-featured { border-color: rgba(239,68,68,.26); background: rgba(239,68,68,.04); }
 .incident-card-topline,.incident-card-meta,.incident-card-footer,.incidents-toolbar,.incidents-actions,.incident-controls,.incident-filter-pills,.incident-row-main,.incident-row-meta,.incident-row-outcome,.incident-row-evidence { display: flex; align-items: center; }
 .incident-card-topline { justify-content: space-between; gap: 12px; }
 .incident-card code,.incident-row-id code { color: #b8e7ff; font: 800 12px var(--font-mono); }

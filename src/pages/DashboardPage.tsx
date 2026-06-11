@@ -175,7 +175,7 @@ export default function DashboardPage() {
 
     window.setTimeout(() => { setStatus('RECORDING — Agent initialized, querying evidence plane'); setReplay({ ...full, events: full.events.slice(0, 1), evidence: [], policy_decisions: [] }); }, 550);
     window.setTimeout(() => { setStatus('EVIDENCE BOUND — Baseline retrieved'); setReplay({ ...full, events: full.events.slice(0, 2), evidence: full.evidence.slice(0, 1), policy_decisions: [] }); }, 1200);
-    window.setTimeout(() => { setStatus('⚠ CRITICAL — Prompt injection payload detected'); setActiveTab('evidence'); setReplay({ ...full, events: full.events.slice(0, 3), evidence: full.evidence.slice(0, 2), policy_decisions: [] }); }, 1950);
+    window.setTimeout(() => { setStatus('CRITICAL — Prompt injection payload detected'); setActiveTab('evidence'); setReplay({ ...full, events: full.events.slice(0, 3), evidence: full.evidence.slice(0, 2), policy_decisions: [] }); }, 1950);
     window.setTimeout(() => { setStatus('POLICY EVAL — Gateway evaluating safety rules'); setActiveTab('policy'); setReplay({ ...full, events: full.events.slice(0, 4), evidence: full.evidence.slice(0, 2), policy_decisions: full.policy_decisions.slice(0, 1) }); }, 2700);
     window.setTimeout(() => { setStatus('BLOCKED — Agent action rejected by policy gateway'); setReplay({ ...full, events: full.events.slice(0, 5), evidence: full.evidence, policy_decisions: full.policy_decisions.slice(0, 2) }); }, 3450);
     window.setTimeout(() => { setStatus('APPROVAL REQUIRED — Human gate active, pipeline paused'); setReplay({ ...full, events: full.events, evidence: full.evidence, policy_decisions: full.policy_decisions }); }, 4250);

@@ -27,6 +27,10 @@ memory.md
 AGENTS.md
 DESIGN.md
 
+# Sensitive screenshots and local-only scripts
+image.png
+scripts/configure_splunk.py
+
 # Internal planning and research docs (not for public repo)
 docs/PRD.md
 docs/TASKS.md

@@ -111,8 +111,16 @@ class SplunkAdapter:
         """Run the SPL query through the official Splunk MCP Server tool call."""
         import asyncio
 
+        # append | spath so Splunk extracts JSON fields from _raw before returning rows
+        mcp_query = query if "| spath" in query else f"{query} | spath"
+
+        # parse "X to Y" time_range into earliest/latest for the MCP tool
+        parts = [p.strip() for p in time_range.split(" to ")]
+        earliest = parts[0] if parts else "-24h"
+        latest = parts[1] if len(parts) > 1 else "now"
+
         try:
-            rows, tool_name = asyncio.run(self._mcp_search_async(query))
+            rows, tool_name = asyncio.run(self._mcp_search_async(mcp_query, earliest=earliest, latest=latest))
         except Exception as exc:
             return [
                 EvidenceRef(
@@ -137,11 +145,31 @@ class SplunkAdapter:
             ]
         evidence: list[EvidenceRef] = []
         for row in rows[:3]:
-            sample = (
-                {key: str(value) for key, value in row.items() if not key.startswith("_")}
-                if isinstance(row, dict)
-                else {"raw": str(row)}
-            )
+            if isinstance(row, dict):
+                sample = {key: str(value) for key, value in row.items() if not key.startswith("_")}
+                # if no fields were extracted, try parsing _raw as JSON
+                if not sample and "_raw" in row:
+                    try:
+                        parsed = json.loads(row["_raw"])
+                        if isinstance(parsed, dict):
+                            sample = {k: str(v) for k, v in parsed.items() if not k.startswith("_")}
+                    except (json.JSONDecodeError, ValueError):
+                        sample = {"raw": str(row["_raw"])[:300]}
+                if not sample:
+                    sample = {"raw": str(row.get("_raw", ""))[:300]}
+                # fill missing message/severity from _raw KV format as fallback
+                import re as _re
+                raw_str = str(row.get("_raw", ""))
+                if not sample.get("message"):
+                    m = _re.search(r'message="([^"]*)"', raw_str)
+                    if m:
+                        sample["message"] = m.group(1)
+                if not sample.get("severity"):
+                    m = _re.search(r'severity="([^"]*)"', raw_str)
+                    if m:
+                        sample["severity"] = m.group(1)
+            else:
+                sample = {"raw": str(row)}
             sample["mcp_tool"] = tool_name
             evidence.append(
                 EvidenceRef(
@@ -155,7 +183,7 @@ class SplunkAdapter:
             )
         return evidence
 
-    async def _mcp_search_async(self, query: str) -> tuple[list[Any], str]:
+    async def _mcp_search_async(self, query: str, earliest: str = "-24h", latest: str = "now") -> tuple[list[Any], str]:
         from mcp import ClientSession
         from mcp.client.streamable_http import streamablehttp_client
 
@@ -173,7 +201,7 @@ class SplunkAdapter:
                 tool = _pick_search_tool(listing.tools)
                 if tool is None:
                     raise RuntimeError("Splunk MCP server exposed no search tool")
-                args = _build_search_args(getattr(tool, "inputSchema", None), query)
+                args = _build_search_args(getattr(tool, "inputSchema", None), query, earliest=earliest, latest=latest)
                 result = await session.call_tool(tool.name, args)
                 if getattr(result, "isError", False):
                     raise RuntimeError(f"MCP tool {tool.name} errored: {_content_text(result)[:300]}")

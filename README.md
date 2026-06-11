@@ -132,9 +132,15 @@ MCP environment variables:
 
 ```bash
 USE_SPLUNK_MCP=true
-SPLUNK_MCP_URL=https://localhost:8089/services/mcp/
-SPLUNK_MCP_TOKEN=<token with audience "mcp" and the mcp_tool_execute capability>
-SPLUNK_MCP_VERIFY_TLS=false   # local self-signed certs
+
+# Splunk Cloud
+SPLUNK_MCP_URL=https://your-host.splunkcloud.com:443/en-US/splunkd/__raw/services/mcp
+SPLUNK_MCP_TOKEN=<MCP encrypted token from the Splunk MCP Server app>
+SPLUNK_MCP_VERIFY_TLS=true
+
+# Local Splunk Enterprise (self-signed cert)
+# SPLUNK_MCP_URL=https://localhost:8089/services/mcp/
+# SPLUNK_MCP_VERIFY_TLS=false
 ```
 
 ## Architecture

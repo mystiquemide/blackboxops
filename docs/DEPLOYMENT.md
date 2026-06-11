@@ -27,9 +27,15 @@ Splunk MCP integration:
 
 ```bash
 USE_SPLUNK_MCP=true
-SPLUNK_MCP_URL=https://your-splunk-host:8089/services/mcp/
-SPLUNK_MCP_TOKEN=<token with audience "mcp" and mcp_tool_execute capability>
-SPLUNK_MCP_VERIFY_TLS=false
+
+# Splunk Cloud
+SPLUNK_MCP_URL=https://your-host.splunkcloud.com:443/en-US/splunkd/__raw/services/mcp
+SPLUNK_MCP_TOKEN=<MCP encrypted token from the Splunk MCP Server app>
+SPLUNK_MCP_VERIFY_TLS=true
+
+# HEC ingestion (Splunk Cloud uses port 8088 on inputs. subdomain)
+SPLUNK_HEC_TOKEN=<HEC token>
+SPLUNK_HEC_URL=https://inputs.your-host.splunkcloud.com:8088/services/collector/event
 ```
 
 See `.env.example` for the full list.
