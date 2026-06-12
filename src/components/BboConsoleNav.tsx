@@ -71,64 +71,71 @@ export default function BboConsoleNav() {
         <div className={`bbo-system-pill ${statusClass}`}><i />{statusText}</div>
 
         {user && (
-          <div className="bbo-user-menu" ref={menuRef}>
-            <button
-              className="bbo-user-trigger"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              type="button"
-              aria-haspopup="true"
-              aria-expanded={menuOpen}
-            >
-              {user.picture
-                ? <img className="bbo-avatar bbo-avatar-photo" src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
-                : <span className="bbo-avatar">{userInitials(user.name)}</span>}
-              <span className="bbo-user-name">{user.name.split(' ')[0]}</span>
-              <ChevronDown size={12} className={menuOpen ? 'bbo-chevron open' : 'bbo-chevron'} />
-            </button>
+          <>
+            <div className="bbo-user-menu" ref={menuRef}>
+              <button
+                className="bbo-user-trigger"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={menuOpen}
+              >
+                {user.picture
+                  ? <img className="bbo-avatar bbo-avatar-photo" src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
+                  : <span className="bbo-avatar">{userInitials(user.name)}</span>}
+                <span className="bbo-user-name">{user.name.split(' ')[0]}</span>
+                <ChevronDown size={12} className={menuOpen ? 'bbo-chevron open' : 'bbo-chevron'} />
+              </button>
 
-            {menuOpen && (
-              <div className="bbo-dropdown" role="menu">
-                <div className="bbo-dropdown-header">
-                  <div className="bbo-dropdown-header-top">
-                    {user.picture
-                      ? <img className="bbo-dropdown-avatar-photo" src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
-                      : <span className="bbo-dropdown-avatar-initials">{userInitials(user.name)}</span>}
-                    <div>
-                      <div className="bbo-dropdown-name">{user.name}</div>
-                      <div className="bbo-dropdown-email">{user.email}</div>
+              {menuOpen && (
+                <div className="bbo-dropdown" role="menu">
+                  <div className="bbo-dropdown-header">
+                    <div className="bbo-dropdown-header-top">
+                      {user.picture
+                        ? <img className="bbo-dropdown-avatar-photo" src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
+                        : <span className="bbo-dropdown-avatar-initials">{userInitials(user.name)}</span>}
+                      <div>
+                        <div className="bbo-dropdown-name">{user.name}</div>
+                        <div className="bbo-dropdown-email">{user.email}</div>
+                      </div>
                     </div>
+                    <span className="bbo-dropdown-provider">{user.provider}</span>
                   </div>
-                  <span className="bbo-dropdown-provider">{user.provider}</span>
+                  <div className="bbo-dropdown-divider" />
+                  <button
+                    className="bbo-dropdown-item"
+                    onClick={() => { setMenuOpen(false); navigate('/account'); }}
+                    type="button"
+                    role="menuitem"
+                  >
+                    <Settings size={13} /> Account settings
+                  </button>
+                  <button
+                    className="bbo-dropdown-item"
+                    onClick={() => { setMenuOpen(false); navigate('/account'); }}
+                    type="button"
+                    role="menuitem"
+                  >
+                    <User size={13} /> Profile
+                  </button>
+                  <div className="bbo-dropdown-divider" />
+                  <button
+                    className="bbo-dropdown-item bbo-dropdown-danger"
+                    onClick={logout}
+                    type="button"
+                    role="menuitem"
+                  >
+                    <LogOut size={13} /> Sign out
+                  </button>
                 </div>
-                <div className="bbo-dropdown-divider" />
-                <button
-                  className="bbo-dropdown-item"
-                  onClick={() => { setMenuOpen(false); navigate('/account'); }}
-                  type="button"
-                  role="menuitem"
-                >
-                  <Settings size={13} /> Account settings
-                </button>
-                <button
-                  className="bbo-dropdown-item"
-                  onClick={() => { setMenuOpen(false); navigate('/account'); }}
-                  type="button"
-                  role="menuitem"
-                >
-                  <User size={13} /> Profile
-                </button>
-                <div className="bbo-dropdown-divider" />
-                <button
-                  className="bbo-dropdown-item bbo-dropdown-danger"
-                  onClick={logout}
-                  type="button"
-                  role="menuitem"
-                >
-                  <LogOut size={13} /> Sign out
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+
+            <button className="bbo-logout" onClick={logout} type="button">
+              <LogOut size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              Sign out
+            </button>
+          </>
         )}
       </div>
     </nav>
