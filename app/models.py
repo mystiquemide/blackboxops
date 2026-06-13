@@ -106,6 +106,7 @@ class IncidentReplay(BaseModel):
     events: list[AgentEvent] = Field(default_factory=list)
     evidence: list[EvidenceRef] = Field(default_factory=list)
     policy_decisions: list[PolicyDecision] = Field(default_factory=list)
+    llm_analysis: str | None = None
 
 
 class ActionProposalRequest(BaseModel):
@@ -146,6 +147,7 @@ class ActionReviewResponse(BaseModel):
     reviewer: str
     note: str = ""
     reviewed_at: str
+    signature: str | None = None
 
 
 class Postmortem(BaseModel):

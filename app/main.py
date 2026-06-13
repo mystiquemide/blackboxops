@@ -1,28 +1,39 @@
 from __future__ import annotations
 
+import hashlib
+import hmac as _hmac
 import json
 import os
 from pathlib import Path
+from textwrap import dedent
 
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
 from app.auth import AuthSession, AuthUser, SigninRequest, SignupRequest, current_user_from_authorization, signin_user, signup_user, update_user_profile
 from app.auth_google import build_google_authorization_url, callback_url_for_session, exchange_google_code_for_session, issue_mock_google_session, use_mock_auth
-from app.demo_agent import INCIDENT_ID, run_demo_incident
+from app.demo_agent import (
+    CACHE_INCIDENT_ID,
+    INCIDENT_ID,
+    run_cache_incident,
+    run_demo_incident,
+)
 from app.models import ActionProposal, ActionProposalRequest, ActionReviewRequest, ActionReviewResponse, AgentEvent, IncidentReplay, IncidentSummary, PolicyDecision, PolicySummary, Postmortem, utc_now
 from app.policy_engine import PolicyEngine
 from app.postmortem import generate_postmortem
 from app.recorder import EventRecorder
 
-app = FastAPI(title="BlackBoxOps", version="0.1.0")
+app = FastAPI(title="BlackBoxOps", version="0.2.0")
 _LAST_REPLAY: IncidentReplay | None = None
+_LAST_CACHE_REPLAY: IncidentReplay | None = None
 _ACTION_PROPOSALS: list[ActionProposal] = []
 _POLICY_ENABLED: dict[str, bool] = {}
+
+_SUPPORTED_INCIDENTS = {INCIDENT_ID, CACHE_INCIDENT_ID}
 
 
 class QueryRequest(BaseModel):
@@ -52,6 +63,16 @@ def _splunk_configured() -> bool:
     return bool(os.getenv("SPLUNK_HEC_TOKEN") or os.getenv("SPLUNK_MCP_URL") or (os.getenv("SPLUNK_HOST") and os.getenv("SPLUNK_TOKEN")))
 
 
+def _llm_configured() -> bool:
+    return bool(os.getenv("ANTHROPIC_API_KEY") or (os.getenv("USE_SPLUNK_AI") == "true" and os.getenv("SPLUNK_TOKEN")))
+
+
+def _sign_approval(action_id: str, status: str, reviewer: str, reviewed_at: str) -> str:
+    secret = os.getenv("APPROVAL_SECRET", "blackboxops-dev-secret-change-in-prod")
+    msg = f"{action_id}:{status}:{reviewer}:{reviewed_at}"
+    return _hmac.new(secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+
+
 @app.get("/api/health")
 @app.get("/health")
 def health() -> dict[str, str | bool]:
@@ -60,6 +81,7 @@ def health() -> dict[str, str | bool]:
         "service": "blackboxops",
         "mock_splunk": _truthy(os.getenv("USE_MOCK_SPLUNK"), True),
         "splunk_configured": _splunk_configured(),
+        "llm_configured": _llm_configured(),
         "policy_mode": "fail_closed",
     }
 
@@ -123,6 +145,13 @@ def demo_run() -> IncidentReplay:
     return _LAST_REPLAY
 
 
+@app.post("/api/demo/run-cache", response_model=IncidentReplay)
+def demo_run_cache() -> IncidentReplay:
+    global _LAST_CACHE_REPLAY
+    _LAST_CACHE_REPLAY = run_cache_incident()
+    return _LAST_CACHE_REPLAY
+
+
 def _demo_policy_id(rule_id: str) -> str:
     mapping = {
         "prompt-injection-content": "POL-INJ-01",
@@ -136,19 +165,19 @@ def _demo_policy_id(rule_id: str) -> str:
 
 
 def _incident_summary_from_record(record: dict) -> IncidentSummary:
-    evidence_count = 3
+    is_injection = "prompt" in record["title"].lower() or "injection" in record["title"].lower()
     return IncidentSummary(
         incident_id=record["incident_id"],
         title=record["title"],
-        severity="critical" if "prompt" in record["title"].lower() else record.get("severity", "medium"),
-        status="blocked" if "prompt" in record["title"].lower() else record.get("status", "demo-ready"),
+        severity="critical" if is_injection else record.get("severity", "medium"),
+        status="blocked" if is_injection else record.get("status", "demo-ready"),
         description=record.get("description", ""),
-        updated_at="2026-05-29T10:05:00Z",
-        actor="bb-agent/checkout-v2",
+        updated_at="2026-06-11T10:05:00Z",
+        actor="bb-agent/checkout-v2" if is_injection else "bb-agent/cache-monitor",
         source="mock_splunk",
-        evidence_refs=evidence_count,
-        policy_id="prompt-injection-content",
-        policy_outcome="BLOCKED",
+        evidence_refs=3 if is_injection else 1,
+        policy_id="POL-INJ-01" if is_injection else "POL-DIAG-01",
+        policy_outcome="BLOCKED" if is_injection else "ALLOWED",
     )
 
 
@@ -166,35 +195,124 @@ def api_incidents() -> list[IncidentSummary]:
 
 def _incident_summaries() -> list[IncidentSummary]:
     records = _load_sample_incident_records()
-    summaries = [
-        _incident_summary_from_record(record)
-        for record in records
-        if record.get("incident_id") == INCIDENT_ID
-    ]
-    return summaries
+    return [_incident_summary_from_record(r) for r in records if r.get("incident_id") in _SUPPORTED_INCIDENTS]
 
 
 def _require_supported_incident(incident_id: str) -> None:
-    if incident_id != INCIDENT_ID:
-        raise HTTPException(status_code=404, detail=f"No replay is available for incident_id={incident_id}")
+    if incident_id not in _SUPPORTED_INCIDENTS:
+        raise HTTPException(status_code=404, detail=f"No replay available for incident_id={incident_id}")
+
+
+def _get_or_run_replay(incident_id: str) -> IncidentReplay:
+    global _LAST_REPLAY, _LAST_CACHE_REPLAY
+    if incident_id == CACHE_INCIDENT_ID:
+        if _LAST_CACHE_REPLAY is None or _LAST_CACHE_REPLAY.incident_id != incident_id:
+            _LAST_CACHE_REPLAY = run_cache_incident()
+        return _LAST_CACHE_REPLAY
+    if _LAST_REPLAY is None or _LAST_REPLAY.incident_id != incident_id:
+        _LAST_REPLAY = run_demo_incident()
+    return _LAST_REPLAY
 
 
 @app.get("/api/incidents/{incident_id}/replay", response_model=IncidentReplay)
 @app.get("/incidents/{incident_id}/replay", response_model=IncidentReplay)
 def incident_replay(incident_id: str) -> IncidentReplay:
     _require_supported_incident(incident_id)
-    global _LAST_REPLAY
-    if _LAST_REPLAY is None or _LAST_REPLAY.incident_id != incident_id:
-        _LAST_REPLAY = run_demo_incident()
-    return _LAST_REPLAY
+    return _get_or_run_replay(incident_id)
 
 
 @app.get("/api/incidents/{incident_id}/postmortem", response_model=Postmortem)
 @app.get("/incidents/{incident_id}/postmortem", response_model=Postmortem)
 def incident_postmortem(incident_id: str) -> Postmortem:
     _require_supported_incident(incident_id)
-    replay = incident_replay(incident_id)
-    return generate_postmortem(replay)
+    return generate_postmortem(_get_or_run_replay(incident_id))
+
+
+@app.get("/api/incidents/{incident_id}/splunk-dashboard")
+def incident_splunk_dashboard(incident_id: str) -> Response:
+    """Returns a Splunk Simple XML dashboard importable into any Splunk instance."""
+    _require_supported_incident(incident_id)
+    replay = _get_or_run_replay(incident_id)
+    title = replay.title.replace('"', "'")
+    xml = dedent(f"""\
+        <?xml version="1.0" encoding="UTF-8"?>
+        <dashboard version="1.1" theme="dark">
+          <label>BlackBoxOps — {title}</label>
+          <description>Incident replay and evidence timeline exported from BlackBoxOps. incident_id={incident_id}</description>
+
+          <row>
+            <panel>
+              <title>Agent Event Timeline</title>
+              <table>
+                <search>
+                  <query>index=main sourcetype=blackboxops:agent_event incident_id="{incident_id}"
+        | eval risk=case(risk_score&gt;=0.9,"critical",risk_score&gt;=0.65,"high",risk_score&gt;=0.35,"medium",1=1,"low")
+        | table _time, event_type, actor, summary, risk_score, risk
+        | sort _time</query>
+                  <earliest>-24h</earliest>
+                  <latest>now</latest>
+                </search>
+              </table>
+            </panel>
+          </row>
+
+          <row>
+            <panel>
+              <title>Policy Decisions</title>
+              <table>
+                <search>
+                  <query>index=main sourcetype=blackboxops:agent_event incident_id="{incident_id}" event_type=policy_check
+        | spath policy_decision.status output=policy_status
+        | spath policy_decision.policy_id output=policy_id
+        | spath policy_decision.risk_level output=risk_level
+        | table _time, actor, policy_id, policy_status, risk_level
+        | sort _time</query>
+                  <earliest>-24h</earliest>
+                  <latest>now</latest>
+                </search>
+              </table>
+            </panel>
+            <panel>
+              <title>Risk Score Distribution</title>
+              <chart>
+                <search>
+                  <query>index=main sourcetype=blackboxops:agent_event incident_id="{incident_id}"
+        | eval risk=case(risk_score&gt;=0.9,"critical",risk_score&gt;=0.65,"high",risk_score&gt;=0.35,"medium",1=1,"low")
+        | stats count by risk
+        | sort -count</query>
+                  <earliest>-24h</earliest>
+                  <latest>now</latest>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.colorPalette">list</option>
+                <option name="charting.chart.colors">0xFF4444,0xFF9900,0x4F46E5,0x22C55E</option>
+              </chart>
+            </panel>
+          </row>
+
+          <row>
+            <panel>
+              <title>Evidence References</title>
+              <table>
+                <search>
+                  <query>index=main sourcetype=blackboxops:agent_event incident_id="{incident_id}"
+        | spath evidence_refs{{}} output=ev_refs
+        | where isnotnull(ev_refs)
+        | table _time, actor, ev_refs
+        | sort _time</query>
+                  <earliest>-24h</earliest>
+                  <latest>now</latest>
+                </search>
+              </table>
+            </panel>
+          </row>
+        </dashboard>
+    """)
+    return Response(
+        content=xml,
+        media_type="application/xml",
+        headers={"Content-Disposition": f'attachment; filename="blackboxops-{incident_id}.xml"'},
+    )
 
 
 def _proposal_status(decision: PolicyDecision) -> str:
@@ -210,7 +328,7 @@ def _proposal_status(decision: PolicyDecision) -> str:
 @app.post("/api/actions/propose", response_model=ActionProposal)
 def propose_action(request: ActionProposalRequest) -> ActionProposal:
     _require_supported_incident(request.incident_id)
-    replay = incident_replay(request.incident_id)
+    replay = _get_or_run_replay(request.incident_id)
     decision = PolicyEngine.from_file("policies/default.yaml").evaluate_action(
         request.action_type,
         request.target,
@@ -257,14 +375,14 @@ def list_action_proposals(incident_id: str | None = None) -> list[ActionProposal
     if incident_id is None:
         return _ACTION_PROPOSALS
     _require_supported_incident(incident_id)
-    return [proposal for proposal in _ACTION_PROPOSALS if proposal.incident_id == incident_id]
+    return [p for p in _ACTION_PROPOSALS if p.incident_id == incident_id]
 
 
 def _find_action_proposal(action_id: str) -> ActionProposal:
     for proposal in _ACTION_PROPOSALS:
         if proposal.action_id == action_id:
             return proposal
-    raise HTTPException(status_code=404, detail=f"No action proposal is available for action_id={action_id}")
+    raise HTTPException(status_code=404, detail=f"No action proposal found for action_id={action_id}")
 
 
 def _review_action(action_id: str, request: ActionReviewRequest, status: str) -> ActionReviewResponse:
@@ -272,14 +390,15 @@ def _review_action(action_id: str, request: ActionReviewRequest, status: str) ->
     if proposal.status != "pending_approval":
         raise HTTPException(status_code=409, detail="Only pending approval actions can be approved or rejected")
     now = utc_now().isoformat().replace("+00:00", "Z")
-    proposal.status = status
+    proposal.status = status  # type: ignore[assignment]
     proposal.review_note = request.note
     proposal.reviewed_at = now
     if status == "approved":
         proposal.approved_by = request.reviewer
     else:
         proposal.rejected_by = request.reviewer
-    replay = incident_replay(proposal.incident_id)
+
+    replay = _get_or_run_replay(proposal.incident_id)
     replay.events.append(AgentEvent(
         incident_id=proposal.incident_id,
         session_id=replay.session_id or "sess_unknown",
@@ -299,13 +418,16 @@ def _review_action(action_id: str, request: ActionReviewRequest, status: str) ->
             "execution_mode": "connector_pending" if status == "approved" else "not_executed",
         },
     ))
+
+    sig = _sign_approval(action_id, status, request.reviewer, now)
     return ActionReviewResponse(
         action_id=proposal.action_id,
         incident_id=proposal.incident_id,
-        status=status,
+        status=status,  # type: ignore[arg-type]
         reviewer=request.reviewer,
         note=request.note,
         reviewed_at=now,
+        signature=sig,
     )
 
 

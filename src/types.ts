@@ -45,6 +45,7 @@ export interface IncidentReplay {
   events: AgentEvent[];
   evidence: EvidenceRef[];
   policy_decisions: PolicyDecision[];
+  llm_analysis?: string | null;
 }
 
 export interface IncidentSummary {
@@ -122,4 +123,5 @@ export interface ActionReviewResponse {
   reviewer: string;
   note: string;
   reviewed_at: string;
+  signature?: string | null;
 }
