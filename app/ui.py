@@ -47,7 +47,7 @@ st.markdown(
         <h1 class="bb-hero-title">The flight recorder for<br/>agentic operations.</h1>
         <p class="bb-hero-subtitle">
           Record every AI decision, Splunk query, evidence reference, policy check, and remediation
-          attempt — then replay incidents with proof instead of vibes.
+          attempt, then replay incidents with proof instead of vibes.
         </p>
       </div>
     </section>
@@ -58,7 +58,7 @@ st.markdown(
 
 
 # ═══════════════════════════════════════════
-# DARK SECTION — Safety Plane Dashboard
+# DARK SECTION - Safety Plane Dashboard
 # ═══════════════════════════════════════════
 st.markdown(f"""
 <div class="bb-section-dark" id="demo">

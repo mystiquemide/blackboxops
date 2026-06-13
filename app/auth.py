@@ -17,6 +17,17 @@ AUTH_STORE_PATH = Path(os.getenv("BLACKBOXOPS_AUTH_STORE", "data/auth_users.json
 _MIN_PASSWORD_LENGTH = 8
 _SESSION_TTL_HOURS = int(os.getenv("BLACKBOXOPS_SESSION_TTL_HOURS", "24"))
 
+# In-memory demo session - no disk writes, survives read-only Railway filesystems
+_DEMO_TOKEN = secrets.token_urlsafe(32)
+_DEMO_USER_RECORD = {
+    "user_id": "usr_demo_judge",
+    "email": "judge@blackboxops.demo",
+    "name": "Judge Demo",
+    "created_at": "2026-01-01T00:00:00+00:00",
+    "provider": "demo",
+    "picture": None,
+}
+
 
 class AuthUser(BaseModel):
     user_id: str
@@ -220,6 +231,9 @@ def current_user_from_authorization(authorization: Annotated[str | None, Header(
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
     token = authorization.removeprefix("Bearer ").strip()
+    # Demo session bypasses disk lookup entirely
+    if token == _DEMO_TOKEN:
+        return _public_user(_DEMO_USER_RECORD)
     now = _now()
     for record in _load_records():
         for entry in record.get("sessions", []):

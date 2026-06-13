@@ -33,6 +33,10 @@ export const api = {
   runCacheDemo: () => request<IncidentReplay>('/demo/run-cache', { method: 'POST' }),
   getReplay: (incidentId: string) => request<IncidentReplay>(`/incidents/${incidentId}/replay`),
   getSplunkDashboard: (incidentId: string) => fetch(`/api/incidents/${incidentId}/splunk-dashboard`, { headers: authHeaders() }),
+  getPostmortemHtml: (incidentId: string, signature?: string | null) => {
+    const qs = signature ? `?signature=${encodeURIComponent(signature)}` : '';
+    return fetch(`/api/incidents/${incidentId}/postmortem/html${qs}`, { headers: authHeaders() });
+  },
   proposeAction: (payload: ActionProposalRequest) => request<ActionProposal>('/actions/propose', { method: 'POST', body: JSON.stringify(payload) }),
   listActions: (incidentId?: string) => request<ActionProposal[]>(`/actions${incidentId ? `?incident_id=${encodeURIComponent(incidentId)}` : ''}`),
   approveAction: (actionId: string, payload: ActionReviewRequest) => request<ActionReviewResponse>(`/actions/${actionId}/approve`, { method: 'POST', body: JSON.stringify(payload) }),

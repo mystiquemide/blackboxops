@@ -23,7 +23,7 @@ flowchart LR
   Postmortem --> UI
 
   Policy -. blocks / approval gates .-> Agent
-```
+```![alt text](image.png)
 
 ## Data Flow
 

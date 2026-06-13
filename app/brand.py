@@ -550,7 +550,7 @@ code, pre, .stCodeBlock, .stCodeBlock code, .stCodeBlock pre {{
 }}
 .bb-footer-links a:hover {{ color: var(--bb-ink); }}
 
-/* ═══════════════ ANIMATIONS (CSS-only — works in Streamlit) ═══════════════ */
+/* ═══════════════ ANIMATIONS (CSS-only, works in Streamlit) ═══════════════ */
 @keyframes bb-fade-up {{
   0%   {{ opacity: 0; transform: translateY(28px); }}
   100% {{ opacity: 1; transform: translateY(0); }}
@@ -564,7 +564,7 @@ code, pre, .stCodeBlock, .stCodeBlock code, .stCodeBlock pre {{
   50%      {{ opacity: 0.4; }}
 }}
 
-/* stagger via nth-of-type on timeline items (Streamlit-safe — targets .bb-timeline-item directly) */
+/* stagger via nth-of-type on timeline items (Streamlit-safe, targets .bb-timeline-item directly) */
 .bb-timeline-item:nth-of-type(1)  {{ animation: bb-fade-up 0.55s var(--ease-out-expo) 0.03s both; }}
 .bb-timeline-item:nth-of-type(2)  {{ animation: bb-fade-up 0.55s var(--ease-out-expo) 0.09s both; }}
 .bb-timeline-item:nth-of-type(3)  {{ animation: bb-fade-up 0.55s var(--ease-out-expo) 0.15s both; }}

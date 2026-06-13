@@ -144,6 +144,7 @@ def run_demo_incident(
 
     # LLM generates the agent response based on actual evidence
     llm_analysis = llm.analyze_evidence(evidence, INCIDENT_TITLE)
+    llm_source = llm.last_source
     add(AgentEvent(
         incident_id=INCIDENT_ID,
         session_id=session_id,
@@ -151,7 +152,7 @@ def run_demo_incident(
         actor="demo_agent",
         risk_score=0.2,
         summary=llm_analysis,
-        payload={"diagnosis": llm_analysis},
+        payload={"diagnosis": llm_analysis, "llm_source": llm_source},
         evidence_refs=evidence,
     ))
 
@@ -168,6 +169,7 @@ def run_demo_incident(
         evidence=evidence,
         policy_decisions=decisions,
         llm_analysis=llm_analysis,
+        llm_source=llm_source,
     )
 
 
@@ -238,7 +240,7 @@ def run_cache_incident(
             event_type="evidence",
             actor=evidence_source,
             risk_score=0.3,
-            summary="Cache evidence captured — no injection patterns detected.",
+            summary="Cache evidence captured, no injection patterns detected.",
             payload={"sample_event": item.sample_event},
             evidence_refs=[item],
         ))
@@ -275,6 +277,7 @@ def run_cache_incident(
 
     # LLM generates agent response based on cache evidence
     llm_analysis = llm.analyze_evidence(evidence, CACHE_INCIDENT_TITLE)
+    llm_source = llm.last_source
     add(AgentEvent(
         incident_id=CACHE_INCIDENT_ID,
         session_id=session_id,
@@ -282,7 +285,7 @@ def run_cache_incident(
         actor="demo_agent",
         risk_score=0.1,
         summary=llm_analysis,
-        payload={"diagnosis": llm_analysis},
+        payload={"diagnosis": llm_analysis, "llm_source": llm_source},
         evidence_refs=evidence,
     ))
 
@@ -299,4 +302,5 @@ def run_cache_incident(
         evidence=evidence,
         policy_decisions=decisions,
         llm_analysis=llm_analysis,
+        llm_source=llm_source,
     )

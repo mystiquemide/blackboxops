@@ -1,4 +1,4 @@
-# Deployment — BlackBoxOps
+# Deployment - BlackBoxOps
 
 BlackBoxOps serves the React frontend as a static build from FastAPI. The same process handles `/api/*` routes and serves `dist/` at `/`.
 

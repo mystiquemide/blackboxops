@@ -84,7 +84,7 @@ const faq = [
   {
     eyebrow: 'Offline-ready',
     question: 'Does it require a live Splunk instance?',
-    answer: 'No. BlackBoxOps runs fully offline with a deterministic incident dataset — no Splunk required to evaluate the product. The same adapter boundary connects to Splunk HEC, Search, and MCP when a live environment is available.',
+    answer: 'No. BlackBoxOps runs fully offline with a deterministic incident dataset, no Splunk required to evaluate the product. The same adapter boundary connects to Splunk HEC, Search, and MCP when a live environment is available.',
   },
   {
     eyebrow: 'Fail-closed safety',
@@ -422,13 +422,15 @@ export default function LandingPage() {
           </aside>
           <div className="lp-faq-list">
             {faq.map((item, index) => (
-              <div className={`lp-faq-item lp-reveal ${openFaq === index ? 'open' : ''}`} key={item.question} style={{ '--d': `${index * 0.06}s` } as CSSProperties}>
-                <button onClick={() => setOpenFaq(openFaq === index ? -1 : index)} aria-expanded={openFaq === index}>
-                  <small>{item.eyebrow}</small>
-                  <span>{item.question}</span>
-                  <ChevronDown size={16} />
-                </button>
-                <div className="lp-faq-answer" aria-hidden={openFaq !== index}><p>{item.answer}</p></div>
+              <div className="lp-reveal" key={item.question} style={{ '--d': `${index * 0.06}s` } as CSSProperties}>
+                <div className={`lp-faq-item ${openFaq === index ? 'open' : ''}`}>
+                  <button onClick={() => setOpenFaq(openFaq === index ? -1 : index)} aria-expanded={openFaq === index}>
+                    <small>{item.eyebrow}</small>
+                    <span>{item.question}</span>
+                    <ChevronDown size={16} />
+                  </button>
+                  <div className="lp-faq-answer" aria-hidden={openFaq !== index}><p>{item.answer}</p></div>
+                </div>
               </div>
             ))}
           </div>
@@ -449,7 +451,7 @@ export default function LandingPage() {
         <div className="lp-footer-status">
           <div className="lp-socials" aria-label="Social links coming soon">
             <a href="https://github.com/mystiquemide/blackboxops" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository">
-              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.69c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.35 1.09 2.92.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 7.99c.85 0 1.71.11 2.51.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.86v2.77c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" /></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.69c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.35 1.09 2.92.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 7.99c.85 0 1.71.11 2.51.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.86v2.77c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" /></svg>
             </a>
             <span aria-label="X coming soon" title="X coming soon">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.39L6.48 22H3.36l7.25-8.29L2.97 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.84h1.73L8.43 4.05H6.58L17.8 19.84Z" /></svg>

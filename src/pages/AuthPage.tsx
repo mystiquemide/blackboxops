@@ -122,7 +122,7 @@ export default function AuthPage() {
 
         <div className="auth-card">
 
-          {/* Sandbox — primary path */}
+          {/* Sandbox - primary path */}
           <div className="auth-sandbox-block">
             <div className="auth-sandbox-live-bar">
               <span className="auth-sandbox-live-dot" />
@@ -173,7 +173,7 @@ export default function AuthPage() {
 
           <div className="auth-divider"><span /> or sign in to your account <span /></div>
 
-          {/* Real account — secondary path */}
+          {/* Real account - secondary path */}
           <div className="auth-card-top">
             <div>
               <span>Operator workspace</span>

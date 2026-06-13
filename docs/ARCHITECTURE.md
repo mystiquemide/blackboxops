@@ -1,4 +1,4 @@
-# Architecture — BlackBoxOps
+# Architecture - BlackBoxOps
 
 ## System Overview
 
@@ -61,17 +61,17 @@ blackboxops/
 
 ## Data Models
 
-**AgentEvent** — one recorded step in the agent's operation chain:
+**AgentEvent** - one recorded step in the agent's operation chain:
 - `event_id`, `incident_id`, `session_id`, `timestamp`
 - `event_type`: prompt | spl_query | evidence | policy_check | action_proposal | approval
 - `actor`, `risk_score`, `summary`, `payload`, `evidence_refs`
 
-**EvidenceRef** — a Splunk query result bound to an agent claim:
+**EvidenceRef** - a Splunk query result bound to an agent claim:
 - `evidence_id`, `query`, `time_range`
 - `source`: offline | splunk_mcp | splunk_search_api
 - `sample_event`, `confidence`, `risk_flags`
 
-**PolicyDecision** — the safety gateway's verdict on an action or query:
+**PolicyDecision** - the safety gateway's verdict on an action or query:
 - `decision_id`, `policy_id`
 - `status`: allow | block | approval_required | warn
 - `reason`, `risk_level`, `matched_rules`

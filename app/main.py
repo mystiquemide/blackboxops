@@ -34,6 +34,7 @@ _ACTION_PROPOSALS: list[ActionProposal] = []
 _POLICY_ENABLED: dict[str, bool] = {}
 
 _SUPPORTED_INCIDENTS = {INCIDENT_ID, CACHE_INCIDENT_ID}
+_ANALYSIS_CACHE: dict[str, tuple[str, str]] = {}
 
 
 class QueryRequest(BaseModel):
@@ -64,7 +65,10 @@ def _splunk_configured() -> bool:
 
 
 def _llm_configured() -> bool:
-    return bool(os.getenv("ANTHROPIC_API_KEY") or (os.getenv("USE_SPLUNK_AI") == "true" and os.getenv("SPLUNK_TOKEN")))
+    return bool(
+        os.getenv("GROQ_API_KEY")
+        or (os.getenv("USE_SPLUNK_AI") == "true" and os.getenv("SPLUNK_TOKEN"))
+    )
 
 
 def _sign_approval(action_id: str, status: str, reviewer: str, reviewed_at: str) -> str:
@@ -113,14 +117,8 @@ def auth_patch_profile(body: ProfileUpdateRequest, user: AuthUser = Depends(curr
 
 @app.post("/api/auth/demo", response_model=AuthSession)
 def auth_demo() -> AuthSession:
-    from app.auth import upsert_oauth_user
-    return upsert_oauth_user(
-        email="judge@blackboxops.demo",
-        name="Judge Demo",
-        provider="demo",
-        provider_user_id="demo-judge",
-        picture=None,
-    )
+    from app.auth import _DEMO_TOKEN, _DEMO_USER_RECORD, AuthSession, _public_user
+    return AuthSession(token=_DEMO_TOKEN, user=_public_user(_DEMO_USER_RECORD))
 
 
 @app.get("/api/auth/google/login")
@@ -203,14 +201,35 @@ def _require_supported_incident(incident_id: str) -> None:
         raise HTTPException(status_code=404, detail=f"No replay available for incident_id={incident_id}")
 
 
+def _with_analysis(replay: IncidentReplay) -> IncidentReplay:
+    """Lazily inject LLM analysis if missing. Uses cache to avoid duplicate calls."""
+    if replay.llm_analysis:
+        return replay
+    cached = _ANALYSIS_CACHE.get(replay.incident_id)
+    if cached:
+        return replay.model_copy(update={"llm_analysis": cached[0], "llm_source": cached[1]})
+    from app.llm import LLMAnalyzer
+    try:
+        analyzer = LLMAnalyzer()
+        text = analyzer.analyze_evidence(replay.evidence, replay.title)
+        if text:
+            _ANALYSIS_CACHE[replay.incident_id] = (text, analyzer.last_source)
+            return replay.model_copy(update={"llm_analysis": text, "llm_source": analyzer.last_source})
+    except Exception:
+        pass
+    return replay
+
+
 def _get_or_run_replay(incident_id: str) -> IncidentReplay:
     global _LAST_REPLAY, _LAST_CACHE_REPLAY
     if incident_id == CACHE_INCIDENT_ID:
         if _LAST_CACHE_REPLAY is None or _LAST_CACHE_REPLAY.incident_id != incident_id:
             _LAST_CACHE_REPLAY = run_cache_incident()
+        _LAST_CACHE_REPLAY = _with_analysis(_LAST_CACHE_REPLAY)
         return _LAST_CACHE_REPLAY
     if _LAST_REPLAY is None or _LAST_REPLAY.incident_id != incident_id:
         _LAST_REPLAY = run_demo_incident()
+    _LAST_REPLAY = _with_analysis(_LAST_REPLAY)
     return _LAST_REPLAY
 
 
@@ -228,6 +247,16 @@ def incident_postmortem(incident_id: str) -> Postmortem:
     return generate_postmortem(_get_or_run_replay(incident_id))
 
 
+@app.get("/api/incidents/{incident_id}/postmortem/html")
+def incident_postmortem_html(incident_id: str, signature: str | None = None) -> Response:
+    """Returns a print-ready HTML postmortem. Open in browser and print to PDF."""
+    _require_supported_incident(incident_id)
+    from app.postmortem import generate_postmortem_html
+    replay = _get_or_run_replay(incident_id)
+    html = generate_postmortem_html(replay, signature=signature)
+    return Response(content=html, media_type="text/html")
+
+
 @app.get("/api/incidents/{incident_id}/splunk-dashboard")
 def incident_splunk_dashboard(incident_id: str) -> Response:
     """Returns a Splunk Simple XML dashboard importable into any Splunk instance."""
@@ -237,7 +266,7 @@ def incident_splunk_dashboard(incident_id: str) -> Response:
     xml = dedent(f"""\
         <?xml version="1.0" encoding="UTF-8"?>
         <dashboard version="1.1" theme="dark">
-          <label>BlackBoxOps — {title}</label>
+          <label>BlackBoxOps - {title}</label>
           <description>Incident replay and evidence timeline exported from BlackBoxOps. incident_id={incident_id}</description>
 
           <row>

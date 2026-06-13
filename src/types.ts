@@ -46,6 +46,7 @@ export interface IncidentReplay {
   evidence: EvidenceRef[];
   policy_decisions: PolicyDecision[];
   llm_analysis?: string | null;
+  llm_source?: string | null;
 }
 
 export interface IncidentSummary {

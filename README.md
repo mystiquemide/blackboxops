@@ -1,6 +1,8 @@
 # BlackBoxOps
 
-Splunk-native flight recorder and safety layer for agentic operations.
+**AI agents are making production decisions with no audit trail. BlackBoxOps fixes that.**
+
+When an autonomous ops agent queries Splunk, proposes a remediation, and acts on your infrastructure, there is no record of why it decided what it decided. No evidence chain. No policy check you can point to. No postmortem that holds up under review. BlackBoxOps is the forensic layer that wraps every agent-to-Splunk operation - recording, gating, signing, and replaying every decision before it reaches production.
 
 ![CI](https://github.com/mystiquemide/blackboxops/actions/workflows/ci.yml/badge.svg)
 ![CodeQL](https://github.com/mystiquemide/blackboxops/actions/workflows/codeql.yml/badge.svg)
@@ -8,12 +10,14 @@ Splunk-native flight recorder and safety layer for agentic operations.
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-41%20passing-00c853)
+![Tests](https://img.shields.io/badge/tests-48%20passing-00c853)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-BlackBoxOps records every AI ops decision, Splunk query, evidence reference, policy check, approval gate, and remediation proposal. It then replays the incident as a forensic timeline and generates an evidence-backed postmortem. When an agent touches production, you can prove what happened.
-
 ![BlackBoxOps landing](docs/assets/landing-hero.png)
+
+## Architecture
+
+![BlackBoxOps architecture](docs/architecture.svg)
 
 ## Why
 
@@ -65,10 +69,10 @@ npm install
 Run the React app locally (primary UI):
 
 ```bash
-# Terminal 1 — API
+# Terminal 1 - API
 USE_MOCK_SPLUNK=true USE_MOCK_AUTH=true uvicorn app.main:app --reload --port 8000
 
-# Terminal 2 — React app
+# Terminal 2 - React app
 npm run dev
 ```
 

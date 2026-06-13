@@ -107,6 +107,7 @@ class IncidentReplay(BaseModel):
     evidence: list[EvidenceRef] = Field(default_factory=list)
     policy_decisions: list[PolicyDecision] = Field(default_factory=list)
     llm_analysis: str | None = None
+    llm_source: str | None = None
 
 
 class ActionProposalRequest(BaseModel):

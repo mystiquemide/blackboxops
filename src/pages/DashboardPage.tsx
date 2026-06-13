@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, BrainCircuit, CheckCircle2, Download, Flag, Play, Radar, ShieldAlert, XCircle } from 'lucide-react';
+import { ArrowRight, BrainCircuit, CheckCircle2, Download, FileText, Flag, Play, Radar, ShieldAlert, XCircle } from 'lucide-react';
 
 import BboConsoleNav from '../components/BboConsoleNav';
 import { AUTH_USER_KEY, api } from '../api';
@@ -12,7 +12,7 @@ const CACHE_ID = 'inc_safe_remediation_cache';
 
 const mockReplay: IncidentReplay = {
   incident_id: CHECKOUT_ID,
-  title: 'Prompt Injection — Checkout Pipeline',
+  title: 'Prompt Injection - Checkout Pipeline',
   status: 'blocked',
   events: [
     {
@@ -32,7 +32,7 @@ const mockReplay: IncidentReplay = {
       event_id: 'EVT-004', incident_id: 'INC-20260529', session_id: 'sess_demo_checkout', timestamp: '2026-05-29T09:14:22Z', event_type: 'POLICY_EVAL', actor: 'policy-gateway/v3', risk_score: 0.75, summary: 'Policy engine evaluating agent action against safety ruleset POL-INJ-01.', payload: {}, evidence_refs: [], policy_decision: { decision_id: 'DEC-001', policy_id: 'POL-SEC-001', status: 'allow', reason: 'Read-only Splunk query within permitted index scope.', risk_level: 'low', matched_rules: ['RULE-READ-ONLY'], required_approval: false },
     },
     {
-      event_id: 'EVT-005', incident_id: 'INC-20260529', session_id: 'sess_demo_checkout', timestamp: '2026-05-29T09:14:23Z', event_type: 'ACTION_BLOCKED', actor: 'policy-gateway/v3', risk_score: 0.98, summary: 'Agent action BLOCKED. Proposed action rejected — prompt injection risk exceeds threshold.', payload: {}, evidence_refs: [
+      event_id: 'EVT-005', incident_id: 'INC-20260529', session_id: 'sess_demo_checkout', timestamp: '2026-05-29T09:14:23Z', event_type: 'ACTION_BLOCKED', actor: 'policy-gateway/v3', risk_score: 0.98, summary: 'Agent action BLOCKED. Proposed action rejected, prompt injection risk exceeds threshold.', payload: {}, evidence_refs: [
         { evidence_id: 'EVD-101', source: 'splunk:user-input-audit', confidence: 0.99, query: 'index=checkout sourcetype=user_input\n| where injection=true', time_range: '2026-05-29 09:14:15 → 09:14:19', sample_event: { message: 'INJECTED payload attempted instruction override.' }, risk_flags: ['PROMPT_INJECTION', 'DATA_EXFIL_ATTEMPT'] },
       ], policy_decision: { decision_id: 'DEC-002', policy_id: 'POL-INJ-01', status: 'block', reason: 'Prompt injection content detected. Risk score 0.98 exceeds threshold.', risk_level: 'critical', matched_rules: ['RULE-INJECTION-BLOCK'], required_approval: false },
     },
@@ -46,7 +46,7 @@ const mockReplay: IncidentReplay = {
 mockReplay.evidence = Array.from(new Map(mockReplay.events.flatMap((e) => e.evidence_refs).map((e) => [e.evidence_id, e])).values());
 mockReplay.policy_decisions = mockReplay.events.map((e) => e.policy_decision).filter(Boolean) as PolicyDecision[];
 
-type DetailTab = 'evidence' | 'policy' | 'report';
+type DetailTab = 'evidence' | 'policy' | 'mcp' | 'report';
 type Scenario = 'checkout' | 'cache';
 
 function getStoredUser(): AuthUser | null {
@@ -69,6 +69,38 @@ function Metric({ label, value, sub, tone, small = false }: { label: string; val
 
 function Empty({ text }: { text: string }) {
   return <div className="bbo-empty"><div className="bbo-empty-icon"><Radar size={26} /></div><div>{text}</div></div>;
+}
+
+function OnboardingCard({ scenario, onRun }: { scenario: Scenario; onRun: () => void }) {
+  return (
+    <div className="bbo-onboard">
+      <div className="bbo-onboard-icon"><Radar size={30} /></div>
+      <h3 className="bbo-onboard-title">Replay room ready</h3>
+      <p className="bbo-onboard-body">
+        BlackBoxOps records every agent decision, binds claims to Splunk evidence refs,
+        and enforces policy before any production action executes. Select a scenario and run a replay to see the full chain.
+      </p>
+      <div className="bbo-onboard-scenarios">
+        <div className={`bbo-onboard-scene ${scenario === 'checkout' ? 'active' : ''}`}>
+          <ShieldAlert size={13} />
+          <div>
+            <strong>Checkout · Injection</strong>
+            <small>Prompt injection attack detected and blocked by policy gateway · risk 0.98</small>
+          </div>
+        </div>
+        <div className={`bbo-onboard-scene safe ${scenario === 'cache' ? 'active' : ''}`}>
+          <CheckCircle2 size={13} />
+          <div>
+            <strong>Cache · Safe Remediation</strong>
+            <small>Cache error burst triaged, ticket created, no policy blocks triggered</small>
+          </div>
+        </div>
+      </div>
+      <button className="bbo-run-btn" onClick={onRun} type="button">
+        <Play size={12} fill="currentColor" />Run first replay
+      </button>
+    </div>
+  );
 }
 
 function EventCard({ event, index }: { event: AgentEvent; index: number }) {
@@ -159,7 +191,7 @@ export default function DashboardPage() {
   const [running, setRunning] = useState(false);
   const [replay, setReplay] = useState<IncidentReplay | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('evidence');
-  const [status, setStatus] = useState('STANDBY — Run to begin incident replay');
+  const [status, setStatus] = useState('STANDBY - Run to begin incident replay');
   const [dataMode, setDataMode] = useState<'live' | 'mock'>('mock');
   const [postmortem, setPostmortem] = useState('');
   const [actionProposal, setActionProposal] = useState<ActionProposal | null>(null);
@@ -181,7 +213,7 @@ export default function DashboardPage() {
     setActionProposal(null);
     setActionError('');
     setApprovalSig(null);
-    setStatus('STANDBY — Run to begin incident replay');
+    setStatus('STANDBY - Run to begin incident replay');
     setActiveTab('evidence');
   }
 
@@ -193,9 +225,9 @@ export default function DashboardPage() {
     setApprovalSig(null);
 
     const isCheckout = scenario === 'checkout';
-    const base = isCheckout ? mockReplay : { ...mockReplay, incident_id: CACHE_ID, title: 'Cache Error Burst — Safe Remediation', events: mockReplay.events.slice(0, 4), evidence: mockReplay.evidence.slice(0, 1), policy_decisions: [] };
+    const base = isCheckout ? mockReplay : { ...mockReplay, incident_id: CACHE_ID, title: 'Cache Error Burst - Safe Remediation', events: mockReplay.events.slice(0, 4), evidence: mockReplay.evidence.slice(0, 1), policy_decisions: [] };
     setReplay({ ...base, events: [], evidence: [], policy_decisions: [] });
-    setStatus('INITIALIZING — Evidence recorder active');
+    setStatus('INITIALIZING - Evidence recorder active');
 
     let full: IncidentReplay = base;
     try {
@@ -204,23 +236,23 @@ export default function DashboardPage() {
     } catch {
       full = base;
       setDataMode('mock');
-      setStatus('MOCK SPLUNK — Backend offline, deterministic evidence loaded');
+      setStatus('MOCK SPLUNK - Backend offline, deterministic evidence loaded');
     }
 
     if (isCheckout) {
-      window.setTimeout(() => { setStatus('RECORDING — Agent initialized, querying evidence plane'); setReplay({ ...full, events: full.events.slice(0, 1), evidence: [], policy_decisions: [] }); }, 550);
-      window.setTimeout(() => { setStatus('EVIDENCE BOUND — Baseline retrieved'); setReplay({ ...full, events: full.events.slice(0, 2), evidence: full.evidence.slice(0, 1), policy_decisions: [] }); }, 1200);
-      window.setTimeout(() => { setStatus('CRITICAL — Prompt injection payload detected'); setActiveTab('evidence'); setReplay({ ...full, events: full.events.slice(0, 3), evidence: full.evidence.slice(0, 2), policy_decisions: [] }); }, 1950);
-      window.setTimeout(() => { setStatus('POLICY EVAL — Gateway evaluating safety rules'); setActiveTab('policy'); setReplay({ ...full, events: full.events.slice(0, 4), evidence: full.evidence.slice(0, 2), policy_decisions: full.policy_decisions.slice(0, 1) }); }, 2700);
-      window.setTimeout(() => { setStatus('BLOCKED — Agent action rejected by policy gateway'); setReplay({ ...full, events: full.events.slice(0, 5), evidence: full.evidence, policy_decisions: full.policy_decisions.slice(0, 2) }); }, 3450);
-      window.setTimeout(() => { setStatus('APPROVAL REQUIRED — Human gate active, pipeline paused'); setReplay({ ...full, events: full.events, evidence: full.evidence, policy_decisions: full.policy_decisions }); }, 4250);
-      window.setTimeout(() => { setStatus('RECORDED — AI analysis complete, postmortem ready'); setActiveTab('report'); setRunning(false); }, 5100);
+      window.setTimeout(() => { setStatus('RECORDING - Agent initialized, querying evidence plane'); setActiveTab('mcp'); setReplay({ ...full, events: full.events.slice(0, 1), evidence: [], policy_decisions: [] }); }, 550);
+      window.setTimeout(() => { setStatus('EVIDENCE BOUND - Baseline retrieved'); setReplay({ ...full, events: full.events.slice(0, 2), evidence: full.evidence.slice(0, 1), policy_decisions: [] }); }, 1200);
+      window.setTimeout(() => { setStatus('CRITICAL - Prompt injection payload detected'); setActiveTab('evidence'); setReplay({ ...full, events: full.events.slice(0, 3), evidence: full.evidence.slice(0, 2), policy_decisions: [] }); }, 1950);
+      window.setTimeout(() => { setStatus('POLICY EVAL - Gateway evaluating safety rules'); setActiveTab('policy'); setReplay({ ...full, events: full.events.slice(0, 4), evidence: full.evidence.slice(0, 2), policy_decisions: full.policy_decisions.slice(0, 1) }); }, 2700);
+      window.setTimeout(() => { setStatus('BLOCKED - Agent action rejected by policy gateway'); setReplay({ ...full, events: full.events.slice(0, 5), evidence: full.evidence, policy_decisions: full.policy_decisions.slice(0, 2) }); }, 3450);
+      window.setTimeout(() => { setStatus('APPROVAL REQUIRED - Human gate active, pipeline paused'); setReplay({ ...full, events: full.events, evidence: full.evidence, policy_decisions: full.policy_decisions }); }, 4250);
+      window.setTimeout(() => { setStatus('RECORDED - AI analysis complete, postmortem ready'); setActiveTab('report'); setRunning(false); }, 5100);
     } else {
-      window.setTimeout(() => { setStatus('RECORDING — Agent querying cache evidence'); setReplay({ ...full, events: full.events.slice(0, 1), evidence: [], policy_decisions: [] }); }, 500);
-      window.setTimeout(() => { setStatus('EVIDENCE BOUND — Cache error logs retrieved'); setActiveTab('evidence'); setReplay({ ...full, events: full.events.slice(0, 3), evidence: full.evidence, policy_decisions: [] }); }, 1300);
-      window.setTimeout(() => { setStatus('POLICY EVAL — Reviewing ticket creation request'); setActiveTab('policy'); setReplay({ ...full, events: full.events.slice(0, 4), evidence: full.evidence, policy_decisions: full.policy_decisions.slice(0, 1) }); }, 2200);
-      window.setTimeout(() => { setStatus('ALLOWED — Ticket creation approved by policy'); setReplay({ ...full, events: full.events.slice(0, 5), evidence: full.evidence, policy_decisions: full.policy_decisions }); }, 3000);
-      window.setTimeout(() => { setStatus('RECORDED — AI analysis complete, postmortem ready'); setActiveTab('report'); setRunning(false); }, 3800);
+      window.setTimeout(() => { setStatus('RECORDING - Agent querying cache evidence'); setActiveTab('mcp'); setReplay({ ...full, events: full.events.slice(0, 1), evidence: [], policy_decisions: [] }); }, 500);
+      window.setTimeout(() => { setStatus('EVIDENCE BOUND - Cache error logs retrieved'); setActiveTab('evidence'); setReplay({ ...full, events: full.events.slice(0, 3), evidence: full.evidence, policy_decisions: [] }); }, 1300);
+      window.setTimeout(() => { setStatus('POLICY EVAL - Reviewing ticket creation request'); setActiveTab('policy'); setReplay({ ...full, events: full.events.slice(0, 4), evidence: full.evidence, policy_decisions: full.policy_decisions.slice(0, 1) }); }, 2200);
+      window.setTimeout(() => { setStatus('ALLOWED - Ticket creation approved by policy'); setReplay({ ...full, events: full.events.slice(0, 5), evidence: full.evidence, policy_decisions: full.policy_decisions }); }, 3000);
+      window.setTimeout(() => { setStatus('RECORDED - AI analysis complete, postmortem ready'); setActiveTab('report'); setRunning(false); }, 3800);
     }
   }
 
@@ -246,7 +278,7 @@ export default function DashboardPage() {
         reason: 'Restart checkout-api after prompt-injection containment evidence reviewed.',
       });
       setActionProposal(proposal);
-      setStatus(proposal.status === 'pending_approval' ? 'APPROVAL QUEUED — SRE decision required' : `POLICY ${proposal.status.toUpperCase()} — Recorded`);
+      setStatus(proposal.status === 'pending_approval' ? 'APPROVAL QUEUED - SRE decision required' : `POLICY ${proposal.status.toUpperCase()} - Recorded`);
       setActiveTab('policy');
       await refreshReplay(incidentId);
     } catch (error) {
@@ -267,7 +299,7 @@ export default function DashboardPage() {
         : await api.rejectAction(actionProposal.action_id, payload);
       setActionProposal({ ...actionProposal, status: response.status, approved_by: response.status === 'approved' ? response.reviewer : actionProposal.approved_by, rejected_by: response.status === 'rejected' ? response.reviewer : actionProposal.rejected_by, review_note: response.note, reviewed_at: response.reviewed_at });
       if (response.signature) setApprovalSig(response.signature);
-      setStatus(decision === 'approve' ? 'APPROVED — Signed decision recorded, connector pending' : 'REJECTED — Signed decision recorded, no action executed');
+      setStatus(decision === 'approve' ? 'APPROVED - Signed decision recorded, connector pending' : 'REJECTED - Signed decision recorded, no action executed');
       await refreshReplay(actionProposal.incident_id);
     } catch (error) {
       setActionError(friendlyError(error, `Unable to ${decision} this action. Try again.`));
@@ -302,6 +334,19 @@ export default function DashboardPage() {
       const a = document.createElement('a');
       a.href = url; a.download = `blackboxops-${replay.incident_id}.xml`; a.click();
       URL.revokeObjectURL(url);
+    } catch { /* non-fatal */ }
+  }
+
+  async function exportPdf() {
+    if (!replay) return;
+    try {
+      const res = await api.getPostmortemHtml(replay.incident_id, approvalSig);
+      if (!res.ok) return;
+      const html = await res.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (win) setTimeout(() => URL.revokeObjectURL(url), 15_000);
     } catch { /* non-fatal */ }
   }
 
@@ -341,7 +386,7 @@ export default function DashboardPage() {
               <span className={`bbo-dot ${scenario === 'cache' ? 'green' : 'orange'}`} />Cache · Safe Remediation
             </button>
           </div>
-          <div><div className="bbo-incident-title">{replay?.title ?? (scenario === 'checkout' ? mockReplay.title : 'Cache Error Burst — Safe Remediation')}</div><div className="bbo-incident-id">{replay?.incident_id ?? (scenario === 'checkout' ? CHECKOUT_ID : CACHE_ID)} · SPLUNK-NATIVE · MCP-READY</div></div>
+          <div><div className="bbo-incident-title">{replay?.title ?? (scenario === 'checkout' ? mockReplay.title : 'Cache Error Burst - Safe Remediation')}</div><div className="bbo-incident-id">{replay?.incident_id ?? (scenario === 'checkout' ? CHECKOUT_ID : CACHE_ID)} · SPLUNK-NATIVE · MCP-READY</div></div>
           <div className="bbo-status"><span className="bbo-status-dot" style={{ background: outcome === 'BLOCKED' ? 'var(--bbo-red)' : running ? 'var(--bbo-amber)' : outcome === 'RECORDED' ? 'var(--bbo-green)' : 'var(--bbo-muted)' }} />{status}</div>
           <button className="bbo-run-btn" onClick={runDemo} disabled={running}><Play size={12} fill="currentColor" />{running ? 'Replaying...' : replay ? 'Replay again' : 'Run incident replay'}</button>
         </section>
@@ -369,11 +414,15 @@ export default function DashboardPage() {
 
           <main className="bbo-timeline">
             <div className="bbo-panel-head">Agent action chain · Replay timeline</div>
-            {!replay?.events.length ? <Empty text={running ? 'Reconstructing incident replay...' : 'No events recorded yet. Run incident replay to begin.'} /> : replay.events.map((event, i) => <EventCard event={event} index={i} key={event.event_id} />)}
+            {!replay?.events.length
+              ? (running
+                  ? <Empty text="Reconstructing incident replay..." />
+                  : <OnboardingCard scenario={scenario} onRun={runDemo} />)
+              : replay.events.map((event, i) => <EventCard event={event} index={i} key={event.event_id} />)}
           </main>
 
           <aside className="bbo-right-panel">
-            <div className="bbo-tabs">{(['evidence', 'policy', 'report'] as DetailTab[]).map((tab) => <button className={`bbo-tab ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} key={tab}>{tab}</button>)}</div>
+            <div className="bbo-tabs">{(['evidence', 'policy', 'mcp', 'report'] as DetailTab[]).map((tab) => <button className={`bbo-tab ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} key={tab}>{tab}</button>)}</div>
             <div className="bbo-tab-content">
               {activeTab === 'evidence' && (
                 !replay?.evidence.length
@@ -396,6 +445,34 @@ export default function DashboardPage() {
                       )}
                     </>
               )}
+              {activeTab === 'mcp' && (() => {
+                const splQueries = replay?.events.filter((e) => e.event_type === 'spl_query') ?? [];
+                const isLive = replay?.source !== 'mock_splunk';
+                return splQueries.length === 0
+                  ? <Empty text="No Splunk queries recorded yet. Run a replay to see MCP traffic." />
+                  : <>
+                      <div className="bbo-label" style={{ marginBottom: 8 }}>
+                        Splunk MCP query log · {splQueries.length} {splQueries.length === 1 ? 'query' : 'queries'}
+                        <span className="bbo-chip" style={{ marginLeft: 8, fontSize: '9px', padding: '2px 6px' }}>
+                          <span className={`bbo-dot ${isLive ? 'green' : 'orange'}`} />
+                          {isLive ? 'live Splunk MCP' : 'mock adapter'}
+                        </span>
+                      </div>
+                      {splQueries.map((ev, i) => (
+                        <article className="bbo-evidence-card" key={ev.event_id} style={{ marginBottom: 8 }}>
+                          <div className="bbo-card-top">
+                            <span className="bbo-ev-id" style={{ color: 'var(--bbo-cyan)' }}>MCP-{String(i + 1).padStart(3, '0')}</span>
+                            <span className="bbo-muted">{ev.timestamp.replace('T', ' ').slice(0, 19)}Z</span>
+                            <span className="bbo-muted">results: {String(ev.payload?.result_count ?? '?')}</span>
+                          </div>
+                          <div className="bbo-code-block" style={{ marginTop: 6, fontSize: '10.5px', lineHeight: '1.6', wordBreak: 'break-all' }}>
+                            {String(ev.payload?.query ?? '')}
+                          </div>
+                          <div style={{ marginTop: 6, fontSize: '10px', color: 'var(--bbo-muted)' }}>{ev.summary}</div>
+                        </article>
+                      ))}
+                    </>;
+              })()}
               {activeTab === 'report' && (
                 !replay
                   ? <Empty text="Run replay to generate incident postmortem." />
@@ -403,7 +480,19 @@ export default function DashboardPage() {
                       <div className="bbo-label">Incident postmortem · {replay.incident_id}</div>
                       {replay.llm_analysis && (
                         <div style={{ background: 'rgba(99,102,241,.07)', border: '1px solid rgba(99,102,241,.25)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
-                          <div style={{ fontSize: '10px', color: 'var(--bbo-accent)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><BrainCircuit size={11} />AI Analysis</div>
+                          <div style={{ fontSize: '10px', color: 'var(--bbo-accent)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <BrainCircuit size={11} />AI Analysis
+                            {replay.llm_source && (
+                              <span style={{
+                                marginLeft: 'auto', fontSize: '9px', padding: '1px 6px', borderRadius: 4, fontWeight: 600,
+                                background: replay.llm_source === 'splunk-ai' ? 'rgba(0,183,235,.15)' : replay.llm_source === 'groq' ? 'rgba(249,115,22,.15)' : 'rgba(148,163,184,.1)',
+                                color: replay.llm_source === 'splunk-ai' ? '#00b7eb' : replay.llm_source === 'groq' ? '#f97316' : 'var(--bbo-muted)',
+                                border: `1px solid ${replay.llm_source === 'splunk-ai' ? 'rgba(0,183,235,.3)' : replay.llm_source === 'groq' ? 'rgba(249,115,22,.3)' : 'rgba(148,163,184,.2)'}`,
+                              }}>
+                                {replay.llm_source === 'splunk-ai' ? 'Splunk AI' : replay.llm_source === 'groq' ? 'Groq' : 'template'}
+                              </span>
+                            )}
+                          </div>
                           <div style={{ fontSize: '12px', lineHeight: '1.65', color: 'var(--bbo-text)' }}>{replay.llm_analysis}</div>
                         </div>
                       )}
@@ -416,7 +505,8 @@ export default function DashboardPage() {
                         {`${replay.outcome ?? 'recorded'}. ${replay.approval_required ? 'Human approval required before disruptive remediation.' : 'No approval gate triggered.'}`}
                       </div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                        <button className="bbo-run-btn" onClick={downloadPostmortem} type="button"><Download size={12} />Export postmortem .md</button>
+                        <button className="bbo-run-btn" onClick={exportPdf} type="button"><FileText size={12} />Export PDF</button>
+                        <button className="bbo-run-btn secondary" onClick={downloadPostmortem} type="button"><Download size={12} />Export .md</button>
                         <button className="bbo-run-btn secondary" onClick={exportSplunkDashboard} type="button" title="Download Splunk dashboard XML"><Download size={12} />Export to Splunk</button>
                       </div>
                     </>

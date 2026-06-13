@@ -232,6 +232,18 @@
 @media (max-width: 460px) { .bbo-page { padding: 0; } .bbo-root { border-radius: 0; border-inline: 0; } .bbo-metrics { grid-template-columns: 1fr; } .bbo-met { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.06); } .bbo-hero, .bbo-command, .bbo-dir-header, .bbo-list-header { padding-inline: 12px; } .bbo-timeline, .bbo-left-rail, .bbo-priority-col, .bbo-tab-content, .bbo-rail-section { padding-inline: 10px; } .bbo-event-head { grid-template-columns: 1fr; } .bbo-event-ts { justify-self: start; } }
 @media (prefers-reduced-motion: reduce) { .bbo-root::before, .bbo-root::after, .bbo-led.orange, .bbo-led.recording, .bbo-event-card { animation: none !important; } }
 
+/* --- Onboarding / empty state --- */
+.bbo-onboard { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 44px 28px 36px; text-align: center; }
+.bbo-onboard-icon { display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid rgba(99,102,241,.25); border-radius: 14px; background: rgba(99,102,241,.08); color: var(--bbo-accent); }
+.bbo-onboard-title { font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: var(--bbo-text); }
+.bbo-onboard-body { max-width: 380px; font-size: 12.5px; line-height: 1.65; color: var(--bbo-sec); }
+.bbo-onboard-scenarios { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; }
+.bbo-onboard-scene { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.07); border-radius: 9px; background: rgba(255,255,255,.03); color: var(--bbo-muted); text-align: left; }
+.bbo-onboard-scene.active { border-color: rgba(99,102,241,.28); background: rgba(99,102,241,.06); color: var(--bbo-accent); }
+.bbo-onboard-scene.safe.active { border-color: rgba(0,200,83,.22); background: rgba(0,200,83,.05); color: var(--bbo-green); }
+.bbo-onboard-scene strong { display: block; font-size: 12px; font-weight: 700; color: var(--bbo-text); margin-bottom: 2px; }
+.bbo-onboard-scene small { font-size: 11px; line-height: 1.45; }
+
 /* --- Nav user menu --- */
 .bbo-user-menu { position: relative; }
 .bbo-user-trigger { display: flex; align-items: center; gap: 7px; padding: 5px 8px 5px 5px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.04); color: var(--bbo-text); cursor: pointer; font: 600 12px var(--bbo-display); transition: all .15s; }

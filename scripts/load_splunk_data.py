@@ -1,7 +1,7 @@
 """Index demo events into Splunk Cloud via HEC (HTTP Event Collector).
 
 Set SPLUNK_HEC_TOKEN and SPLUNK_HEC_URL in .env or as environment variables
-before running. These are required — there is no hardcoded fallback.
+before running. These are required, there is no hardcoded fallback.
 
 Example:
   SPLUNK_HEC_TOKEN=your-hec-token
@@ -73,9 +73,9 @@ def main() -> None:
         status, resp = post_hec(event, epoch)
         if status in (200, 201):
             ok += 1
-            print(f"  OK  {event.get('event_id', '?')} — {event.get('message', '')[:60]}")
+            print(f"  OK  {event.get('event_id', '?')} - {event.get('message', '')[:60]}")
         else:
-            print(f"  ERR {event.get('event_id', '?')} — HTTP {status}: {resp[:120]}")
+            print(f"  ERR {event.get('event_id', '?')} - HTTP {status}: {resp[:120]}")
 
     print(f"\nDone: {ok}/{len(raw_events)} events indexed.")
     if ok < len(raw_events):

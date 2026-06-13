@@ -2,7 +2,7 @@
 
 Priority chain per call:
   1. Splunk hosted model via | ai provider=splunk (USE_SPLUNK_AI=true + REST creds)
-  2. Anthropic Claude (ANTHROPIC_API_KEY set)
+  2. Groq (GROQ_API_KEY set) - uses OpenAI-compatible API, no extra SDK
   3. Template fallback (always works, no external calls)
 """
 from __future__ import annotations
@@ -18,17 +18,35 @@ if TYPE_CHECKING:
 class LLMAnalyzer:
     """Stateless analyzer. Instantiate once per request or reuse across a demo run."""
 
+    last_source: str = "template"
+
     # ── public API ────────────────────────────────────────────────────────────
 
     def analyze_evidence(self, evidence_items: list["EvidenceRef"], incident_title: str) -> str:
         prompt = self._evidence_prompt(evidence_items, incident_title)
-        result = self._splunk_ai(prompt) or self._anthropic(prompt)
-        return result.strip() if result else self._template_analysis(evidence_items)
+        result = self._splunk_ai(prompt)
+        if result:
+            self.last_source = "splunk-ai"
+            return result.strip()
+        result = self._groq(prompt)
+        if result:
+            self.last_source = "groq"
+            return result.strip()
+        self.last_source = "template"
+        return self._template_analysis(evidence_items)
 
     def generate_recommendation(self, replay: "IncidentReplay") -> str:
         prompt = self._recommendation_prompt(replay)
-        result = self._splunk_ai(prompt) or self._anthropic(prompt)
-        return result.strip() if result else self._template_recommendation(replay)
+        result = self._splunk_ai(prompt)
+        if result:
+            self.last_source = "splunk-ai"
+            return result.strip()
+        result = self._groq(prompt)
+        if result:
+            self.last_source = "groq"
+            return result.strip()
+        self.last_source = "template"
+        return self._template_recommendation(replay)
 
     # ── prompt builders ───────────────────────────────────────────────────────
 
@@ -101,7 +119,7 @@ class LLMAnalyzer:
                 return None
             sid = create_r.json()["sid"]
 
-            # Poll up to 90s — LLM calls can be slow
+            # Poll up to 90s - LLM calls can be slow
             for _ in range(45):
                 time.sleep(2)
                 poll_r = requests.get(
@@ -129,21 +147,26 @@ class LLMAnalyzer:
             pass
         return None
 
-    # ── Anthropic Claude ──────────────────────────────────────────────────────
+    # ── Groq (OpenAI-compatible, no extra SDK needed) ─────────────────────────
 
-    def _anthropic(self, prompt: str) -> str | None:
-        key = os.getenv("ANTHROPIC_API_KEY", "")
+    def _groq(self, prompt: str) -> str | None:
+        key = os.getenv("GROQ_API_KEY", "")
         if not key:
             return None
+        import httpx
         try:
-            import anthropic
-            client = anthropic.Anthropic(api_key=key)
-            msg = client.messages.create(
-                model=os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
-                max_tokens=256,
-                messages=[{"role": "user", "content": prompt}],
+            r = httpx.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json={
+                    "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 256,
+                },
+                timeout=30.0,
             )
-            return msg.content[0].text  # type: ignore[attr-defined]
+            r.raise_for_status()
+            return r.json()["choices"][0]["message"]["content"]
         except Exception:
             return None
 
