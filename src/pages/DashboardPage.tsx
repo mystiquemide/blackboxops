@@ -113,7 +113,7 @@ function EventCard({ event, index }: { event: AgentEvent; index: number }) {
         <span className="bbo-event-ts">{fmtTime(event.timestamp)}</span>
       </div>
       <div className="bbo-event-body">
-        <div className="bbo-event-summary">{event.summary.length > 120 ? event.summary.slice(0, 120) + '…' : event.summary}</div>
+        <div className="bbo-event-summary">{(event.summary?.length ?? 0) > 120 ? event.summary.slice(0, 120) + '…' : (event.summary ?? '')}</div>
         <div className="bbo-event-sub"><span className="bbo-event-actor">{event.actor}</span><span className="bbo-event-id">{event.display_id ?? event.event_id}</span></div>
       </div>
       <div className="bbo-event-foot">
@@ -300,7 +300,6 @@ export default function DashboardPage() {
       setActionProposal({ ...actionProposal, status: response.status, approved_by: response.status === 'approved' ? response.reviewer : actionProposal.approved_by, rejected_by: response.status === 'rejected' ? response.reviewer : actionProposal.rejected_by, review_note: response.note, reviewed_at: response.reviewed_at });
       if (response.signature) setApprovalSig(response.signature);
       setStatus(decision === 'approve' ? 'APPROVED - Signed decision recorded, connector pending' : 'REJECTED - Signed decision recorded, no action executed');
-      await refreshReplay(actionProposal.incident_id);
     } catch (error) {
       setActionError(friendlyError(error, `Unable to ${decision} this action. Try again.`));
     } finally {
