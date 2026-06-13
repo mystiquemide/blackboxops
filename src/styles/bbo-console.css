@@ -128,7 +128,7 @@
 .bbo-dot { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; } .bbo-dot.green{background:var(--bbo-green)} .bbo-dot.blue{background:var(--bbo-blue)} .bbo-dot.amber{background:var(--bbo-amber)} .bbo-dot.orange{background:var(--bbo-accent)} .bbo-dot.red{background:var(--bbo-red)} .bbo-dot.muted{background:var(--bbo-muted)}
 
 .bbo-timeline { display: flex; flex-direction: column; gap: 12px; max-height: 620px; overflow-y: auto; padding: 16px 18px; }
-.bbo-panel-head { padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--bbo-muted); font: 700 9px var(--bbo-mono); letter-spacing: .12em; text-transform: uppercase; }
+.bbo-panel-head { padding: 4px 0 8px; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--bbo-muted); font: 700 9px var(--bbo-mono); letter-spacing: .12em; text-transform: uppercase; }
 .bbo-event-card { overflow: hidden; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; background: var(--bbo-surface-el); animation: bboEvent .35s ease both; transition: border-color .2s, background .2s; }
 .bbo-event-card:hover, .bbo-event-card.selected { border-color: rgba(96,165,250,.4); background: var(--bbo-surface-hi); }
 @keyframes bboEvent { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

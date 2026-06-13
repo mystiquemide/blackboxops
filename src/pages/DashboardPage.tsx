@@ -113,7 +113,7 @@ function EventCard({ event, index }: { event: AgentEvent; index: number }) {
         <span className="bbo-event-ts">{fmtTime(event.timestamp)}</span>
       </div>
       <div className="bbo-event-body">
-        <div className="bbo-event-summary">{event.summary}</div>
+        <div className="bbo-event-summary">{event.summary.length > 120 ? event.summary.slice(0, 120) + '…' : event.summary}</div>
         <div className="bbo-event-sub"><span className="bbo-event-actor">{event.actor}</span><span className="bbo-event-id">{event.display_id ?? event.event_id}</span></div>
       </div>
       <div className="bbo-event-foot">
